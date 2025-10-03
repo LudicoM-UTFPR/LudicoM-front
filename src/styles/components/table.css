@@ -1,0 +1,226 @@
+/* Tabela de Empréstimos Ativos */
+.tabela-emprestimo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    max-width: 1200px;
+    padding-inline: 20px;
+}
+
+/* Campo de Busca */
+.busca-container {
+    width: 100%;
+    max-width: 576px;
+    height: 51px;
+    background-color: var(--bg-light);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.busca-input {
+    flex: 1;
+    height: 100%;
+    border: none;
+    background: transparent;
+    padding-inline-start: 12px;
+    padding-inline-end: 53px;
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 29.05px;
+    color: var(--text-dark);
+    outline: none;
+}
+
+.busca-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.busca-input:hover,
+.busca-input:focus {
+    opacity: 0.75;
+}
+
+.busca-btn {
+    position: absolute;
+    right: 12px;
+    width: 29px;
+    height: 29px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Wrapper da Tabela */
+.tabela-wrapper {
+    width: 100%;
+    max-width: 970px;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+}
+
+.tabela {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-top: none;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0px 0px;
+    table-layout: fixed;
+}
+
+/* Título da Tabela (caption) */
+.tabela-titulo {
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 24.2px;
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
+    height: 34px;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0px 0px;
+    caption-side: top;
+    text-align: center;
+    padding-block: 5px;
+}
+
+/* Cabeçalhos da Tabela */
+.tabela-head {
+    background-color: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tabela-header-row {
+    width: 100%;
+}
+
+.tabela-header {
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 24.2px;
+    color: var(--text-primary);
+    height: 48px;
+    border-right: 1px solid var(--border-color);
+    padding: 12px 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.tabela-header:nth-child(1) {
+    width: 24%;
+}
+
+.tabela-header:nth-child(2) {
+    width: 26%;
+}
+
+.tabela-header:nth-child(3) {
+    width: 30%;
+}
+
+.tabela-header:nth-child(4) {
+    width: 20%;
+    border-right: none;
+}
+
+/* Corpo da Tabela */
+.tabela-body {
+    background-color: var(--bg-table-odd);
+}
+
+/* Linhas da Tabela */
+.tabela-row {
+    height: 48px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tabela-row:hover {
+    outline: 3px solid var(--primary-color);
+    outline-offset: -1px;
+}
+
+.tabela-row:nth-child(odd) {
+    background-color: var(--bg-table-odd);
+}
+
+.tabela-row:nth-child(even) {
+    background-color: var(--bg-table-even);
+}
+
+/* Células da Tabela */
+.tabela-cell {
+    font-family: var(--font-family);
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 24.2px;
+    color: var(--text-dark);
+    border-right: 1px solid var(--border-color);
+    padding: 12px 16px;
+    text-align: center;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tabela-cell:nth-child(1) {
+    width: 24%;
+    max-width: 250px;
+    cursor: help;
+}
+
+.tabela-cell:nth-child(2) {
+    width: 26%;
+    max-width: 300px;
+    cursor: help;
+}
+
+.tabela-cell:nth-child(3) {
+    width: 30%;
+}
+
+.tabela-cell:nth-child(4) {
+    width: 20%;
+    border-right: none;
+}
+
+/* Botão Devolver */
+.devolver-btn {
+    width: 99px;
+    height: 32px;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 32px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-block;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.devolver-btn:hover {
+    opacity: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.devolver-btn:active {
+    transform: translateY(0);
+}
