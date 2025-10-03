@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import emprestimosData from "../data/emprestimos.json";
-import { MESSAGES } from "../constants";
-import { escapeHtml, filterByMultipleFields, handleError } from "../utils";
-import SearchIcon from "./icons/SearchIcon";
-import type { Emprestimo } from "../types";
+import emprestimosData from "../../data/emprestimos.json";
+import { MESSAGES } from "../../constants";
+import { escapeHtml, filterByMultipleFields, handleError } from "../../utils";
+import { SearchIcon } from "../icons";
+import type { Emprestimo } from "../../types";
 
 const EmprestimosTable: React.FC = () => {
     const [emprestimos, setEmprestimos] = useState<Emprestimo[]>([]);

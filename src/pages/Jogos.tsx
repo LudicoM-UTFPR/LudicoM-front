@@ -1,5 +1,5 @@
 import React from "react";
-import ComingSoon from "./common/ComingSoon";
+import { ComingSoon } from "../components";
 
 const Jogos: React.FC = () => {
     return <ComingSoon pageName="Jogos" />;

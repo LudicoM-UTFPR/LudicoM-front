@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
-import useScrollVisibility from "../hooks/useScrollVisibility";
-import { ROUTES, UI_CONSTANTS, MESSAGES } from "../constants";
+import useScrollVisibility from "../../hooks/useScrollVisibility";
+import { ROUTES, UI_CONSTANTS, MESSAGES } from "../../constants";
 
 const Header: React.FC = () => {
     const location = useLocation();

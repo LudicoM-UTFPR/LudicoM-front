@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { MESSAGES } from "../constants";
+import { MESSAGES } from "../../constants";
 
 const QuickActions: React.FC = () => {
     const handleCriarEvento = useCallback((): void => {

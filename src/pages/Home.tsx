@@ -1,7 +1,5 @@
 import React from "react";
-import WelcomeSection from "./WelcomeSection";
-import QuickActions from "./QuickActions";
-import EmprestimosTable from "./EmprestimosTable";
+import { WelcomeSection, QuickActions, EmprestimosTable } from "../components";
 
 const Home: React.FC = () => {
     return (

@@ -1,13 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import Home from "./components/Home";
-import Eventos from "./components/Eventos";
-import Jogos from "./components/Jogos";
-import Participantes from "./components/Participantes";
-import Emprestimos from "./components/Emprestimos";
-import Login from "./components/Login";
+import { Header, Footer } from "./components";
+import { Home, Eventos, Jogos, Participantes, Emprestimos, Login } from "./pages";
 import { ROUTES } from "./constants";
 import "./styles/Main.css";
 
