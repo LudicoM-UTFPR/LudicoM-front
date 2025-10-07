@@ -1,0 +1,22 @@
+﻿/* ============================================
+   LUDICOM - SISTEMA DE GERENCIAMENTO
+   Arquivo principal de estilos CSS modular
+   ============================================ */
+
+/* Base Styles */
+@import './base/variables.css';
+@import './base/reset.css';
+
+/* Component Styles */
+@import './components/header.css';
+@import './components/welcome.css';
+@import './components/actions.css';
+@import './components/table.css';
+@import './components/footer.css';
+
+/* Responsive Styles */
+@import './base/responsive.css';
+
+/* ============================================
+   FIM DOS IMPORTS - ESTILOS MODULARES
+   ============================================ */

@@ -1,0 +1,360 @@
+/* Media Queries Responsivos */
+
+/* Desktop Large */
+@media (max-width: 1440px) {
+
+    .acoes-rapidas,
+    .tabela-emprestimo {
+        padding-inline: 100px;
+    }
+}
+
+/* Desktop */
+@media (max-width: 1200px) {
+    .nav {
+        gap: 32px;
+    }
+
+    .acoes-rapidas {
+        padding-inline: 60px;
+    }
+
+    .welcome-title,
+    .coming-soon-title {
+        font-size: 40px;
+        width: auto;
+        max-width: 90%;
+    }
+
+    .tabela-emprestimo {
+        padding-inline: 50px;
+    }
+
+    .tabela-wrapper,
+    .busca-container {
+        width: 100%;
+        max-width: 970px;
+    }
+}
+
+/* Tablet */
+@media (max-width: 992px) {
+    .nav {
+        gap: 20px;
+    }
+
+    .nav-item {
+        font-size: 18px;
+        padding-block: 4px;
+        padding-inline: 8px;
+    }
+
+    .acoes-rapidas {
+        padding-inline: 40px;
+    }
+
+    .acoes-title {
+        font-size: 28px;
+    }
+
+    .acoes-buttons {
+        gap: 14px;
+    }
+
+    .acao-btn {
+        width: 240px;
+        font-size: 22px;
+    }
+
+    .tabela-emprestimo {
+        padding-inline: 20px;
+    }
+
+    .tabela-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tabela {
+        min-width: 600px;
+    }
+
+    .tabela-header,
+    .tabela-cell {
+        font-size: 16px;
+        padding-inline: 12px;
+    }
+
+    .devolver-btn {
+        width: 80px;
+        height: 28px;
+        font-size: 16px;
+    }
+}
+
+/* Tablet Small */
+@media (max-width: 768px) {
+    .header {
+        min-height: auto;
+    }
+
+    .header-container {
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .logo {
+        order: 1;
+    }
+
+    .nav {
+        order: 2;
+        width: 100%;
+        gap: 12px;
+    }
+
+    .login-btn {
+        order: 3;
+    }
+
+    .nav-item {
+        font-size: 16px;
+        padding-block: 4px;
+        padding-inline: 8px;
+    }
+
+    .welcome-title,
+    .coming-soon-title {
+        font-size: 32px;
+        line-height: 1.2;
+        height: auto;
+        padding-inline: 20px;
+    }
+
+    .acoes-rapidas {
+        padding-inline: 20px;
+    }
+
+    .acoes-title {
+        font-size: 26px;
+    }
+
+    .acoes-buttons {
+        gap: 12px;
+    }
+
+    .acao-btn {
+        width: 220px;
+        font-size: 20px;
+        min-height: 44px;
+    }
+
+    .tabela-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: var(--border-radius-lg);
+    }
+
+    .tabela {
+        min-width: 500px;
+    }
+
+    .tabela-titulo {
+        font-size: 18px;
+    }
+
+    .tabela-header,
+    .tabela-cell {
+        font-size: 14px;
+        padding-inline: 10px;
+    }
+
+    .tabela-row {
+        min-height: 44px;
+        height: auto;
+    }
+
+    .devolver-btn {
+        width: 75px;
+        height: 28px;
+        font-size: 14px;
+    }
+
+    .busca-input {
+        font-size: 18px;
+    }
+
+    .busca-container {
+        height: 48px;
+    }
+
+    .footer-content {
+        padding: 1.5rem 0;
+    }
+
+    .footer-content p {
+        font-size: var(--font-size-small);
+    }
+}
+
+/* Mobile Large */
+@media (max-width: 600px) {
+    .nav {
+        gap: 8px;
+    }
+
+    .nav-item {
+        font-size: 14px;
+        padding-block: 3px;
+        padding-inline: 6px;
+    }
+
+    .login-btn {
+        width: 80px;
+        height: 38px;
+        font-size: 20px;
+    }
+
+    .acoes-rapidas {
+        gap: 20px;
+    }
+
+    .acoes-title {
+        font-size: 24px;
+    }
+
+    .acoes-buttons {
+        gap: 10px;
+        flex-direction: column;
+    }
+
+    .acao-btn {
+        width: 100%;
+        max-width: 320px;
+        font-size: 18px;
+        min-height: 48px;
+    }
+
+    .busca-container {
+        height: 46px;
+    }
+
+    .busca-input {
+        font-size: 16px;
+    }
+
+    .tabela {
+        min-width: 450px;
+    }
+
+    .tabela-titulo {
+        font-size: 16px;
+        height: 30px;
+    }
+
+    .tabela-header,
+    .tabela-cell {
+        font-size: 13px;
+        padding-inline: 8px;
+    }
+
+    .devolver-btn {
+        width: 70px;
+        height: 26px;
+        font-size: 13px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .header-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .logo {
+        width: 120px;
+        height: 40px;
+    }
+
+    .nav {
+        gap: 6px;
+    }
+
+    .nav-item {
+        font-size: 13px;
+        padding-block: 2px;
+        padding-inline: 5px;
+    }
+
+    .login-btn {
+        width: 100%;
+        max-width: 200px;
+    }
+
+    .welcome-title,
+    .coming-soon-title {
+        font-size: 28px;
+    }
+
+    .acoes-title {
+        font-size: 22px;
+    }
+
+    .acoes-buttons {
+        gap: 8px;
+    }
+
+    .acao-btn {
+        width: 100%;
+        max-width: 280px;
+        font-size: 16px;
+    }
+
+    .busca-container {
+        height: 44px;
+    }
+
+    .busca-input {
+        font-size: 14px;
+    }
+
+    .busca-btn {
+        width: 24px;
+        height: 24px;
+    }
+
+    .busca-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .tabela {
+        min-width: 400px;
+    }
+
+    .tabela-titulo {
+        font-size: 14px;
+        height: 28px;
+    }
+
+    .tabela-header {
+        font-size: 12px;
+        height: 40px;
+    }
+
+    .tabela-cell {
+        font-size: 12px;
+        height: 40px;
+    }
+
+    .tabela-row {
+        min-height: 40px;
+    }
+
+    .devolver-btn {
+        width: 65px;
+        height: 24px;
+        font-size: 12px;
+    }
+}
