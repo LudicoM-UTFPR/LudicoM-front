@@ -3,11 +3,16 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
-    entry: "./src/index.tsx",
+    entry: "./src/app/index.tsx",
     output: {
         path: path.resolve(__dirname, "dist"),
         filename: "bundle.js",
         clean: true,
+    },
+    performance: {
+        // Permite assets maiores sem warnings locais de desenvolvimento
+        maxAssetSize: 512000, // 500 KiB
+        maxEntrypointSize: 524288, // 512 KiB
     },
     mode: "development",
     devServer: {
@@ -30,6 +35,13 @@ module.exports = {
             {
                 test: /\.css$/i,
                 use: ["style-loader", "css-loader"],
+            },
+            {
+                test: /\.svg$/,
+                type: "asset/resource",
+                generator: {
+                    filename: "assets/images/[name][ext]",
+                },
             },
         ],
     },

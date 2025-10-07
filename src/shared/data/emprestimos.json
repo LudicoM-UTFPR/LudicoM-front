@@ -1,0 +1,122 @@
+[
+    {
+        "id": 1,
+        "idJogo": 1,
+        "idParticipante": 1,
+        "idEvento": 1,
+        "horaEmprestimo": "09:15",
+        "horaDevolucao": null,
+        "isDevolvido": false,
+        "jogo": "Os Colonizadores de Catan",
+        "participante": "Diego Corte Corte Corte",
+        "horario": "09:15"
+    },
+    {
+        "id": 2,
+        "idJogo": 2,
+        "idParticipante": 2,
+        "idEvento": 1,
+        "horaEmprestimo": "09:40",
+        "horaDevolucao": null,
+        "isDevolvido": false,
+        "jogo": "Ticket to Ride",
+        "participante": "Ana Silva Santos",
+        "horario": "09:40"
+    },
+    {
+        "id": 3,
+        "idJogo": 10,
+        "idParticipante": 3,
+        "idEvento": 2,
+        "horaEmprestimo": "10:05",
+        "horaDevolucao": null,
+        "isDevolvido": false,
+        "jogo": "Terraforming Mars",
+        "participante": "Carlos Eduardo Oliveira",
+        "horario": "10:05"
+    },
+    {
+        "id": 4,
+        "idJogo": 3,
+        "idParticipante": 4,
+        "idEvento": 2,
+        "horaEmprestimo": "10:30",
+        "horaDevolucao": null,
+        "isDevolvido": false,
+        "jogo": "Azul",
+        "participante": "Mariana Costa Lima",
+        "horario": "10:30"
+    },
+    {
+        "id": 5,
+        "idJogo": 5,
+        "idParticipante": 5,
+        "idEvento": 3,
+        "horaEmprestimo": "11:00",
+        "horaDevolucao": "13:30",
+        "isDevolvido": true,
+        "jogo": "Pandemic",
+        "participante": "Rafael Mendes Almeida",
+        "horario": "11:00"
+    },
+    {
+        "id": 6,
+        "idJogo": 6,
+        "idParticipante": 6,
+        "idEvento": 3,
+        "horaEmprestimo": "11:45",
+        "horaDevolucao": null,
+        "isDevolvido": false,
+        "jogo": "Wingspan",
+        "participante": "Fernanda Rocha Souza",
+        "horario": "11:45"
+    },
+    {
+        "id": 7,
+        "idJogo": 5,
+        "idParticipante": 7,
+        "idEvento": 4,
+        "horaEmprestimo": "13:20",
+        "horaDevolucao": null,
+        "isDevolvido": false,
+        "jogo": "Pandemic",
+        "participante": "João Pedro Silva",
+        "horario": "13:20"
+    },
+    {
+        "id": 8,
+        "idJogo": 4,
+        "idParticipante": 8,
+        "idEvento": 4,
+        "horaEmprestimo": "14:00",
+        "horaDevolucao": null,
+        "isDevolvido": false,
+        "jogo": "7 Wonders",
+        "participante": "Maria Fernanda Costa",
+        "horario": "14:00"
+    },
+    {
+        "id": 9,
+        "idJogo": 9,
+        "idParticipante": 9,
+        "idEvento": 5,
+        "horaEmprestimo": "15:30",
+        "horaDevolucao": "17:15",
+        "isDevolvido": true,
+        "jogo": "Dominion",
+        "participante": "Lucas Santos Oliveira",
+        "horario": "15:30"
+    },
+    {
+        "id": 10,
+        "idJogo": 7,
+        "idParticipante": 10,
+        "idEvento": 5,
+        "horaEmprestimo": "16:10",
+        "horaDevolucao": null,
+        "isDevolvido": false,
+        "jogo": "Splendor",
+        "participante": "Juliana Almeida Rocha",
+        "horario": "16:10"
+    }
+]

@@ -30,31 +30,3 @@
     flex-wrap: wrap;
     width: 100%;
 }
-
-.acao-btn {
-    width: 279px;
-    min-height: 41px;
-    background-color: var(--primary-color);
-    border: none;
-    border-radius: var(--border-radius);
-    font-family: var(--font-family);
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 29.05px;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.acao-btn:hover {
-    opacity: var(--primary-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-}
-
-.acao-btn:active {
-    transform: translateY(0);
-}

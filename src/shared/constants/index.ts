@@ -21,11 +21,24 @@ export const UI_CONSTANTS: UIConstants = {
 export const MESSAGES: AppMessages = {
     LOGIN_PLACEHOLDER: "Funcionalidade de login será implementada",
     CRIAR_EVENTO: "Funcionalidade de Criar Evento será implementada",
+    ADICIONAR_PARTICIPANTE: "Funcionalidade de Adicionar Participante será implementada",
     CONSULTAR_JOGO: "Funcionalidade de Consultar Jogo será implementada",
     REGISTRAR_EMPRESTIMO: "Funcionalidade de Registrar Empréstimo será implementada",
     CONFIRM_RETURN: "Confirmar devolução?",
     SEARCH_PLACEHOLDER: "Buscar por jogo ou participante...",
 };
+
+// Exportar configurações de campos do DetailModal
+export * from './detailFields';
+
+// Exportar configurações de campos do EditModal
+export * from './editFields';
+
+// Exportar configurações de campos do CreateModal
+export * from './createFields';
+
+// Exportar definições de colunas das tabelas
+export * from './tableColumns';
 
 // Tipos derivados das constantes
 export type RouteValues = typeof ROUTES[keyof typeof ROUTES];

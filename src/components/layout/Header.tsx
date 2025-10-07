@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
-import useScrollVisibility from "../../hooks/useScrollVisibility";
-import { ROUTES, UI_CONSTANTS, MESSAGES } from "../../constants";
+import useScrollVisibility from "../../shared/hooks/useScrollVisibility";
+import { ROUTES, UI_CONSTANTS, MESSAGES } from "../../shared/constants";
 
 const Header: React.FC = () => {
     const location = useLocation();
@@ -20,9 +20,9 @@ const Header: React.FC = () => {
     return (
         <header ref={headerRef} className="header">
             <div className="header-container">
-                <div className="logo">
+                <Link to={ROUTES.HOME} className="logo">
                     <img src="/logo.svg" alt="LudicoM Logo" />
-                </div>
+                </Link>
 
                 <nav className="nav">
                     <Link

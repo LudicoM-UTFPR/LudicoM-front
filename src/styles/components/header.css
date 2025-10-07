@@ -32,6 +32,19 @@
     flex-shrink: 0;
     height: 48px;
     width: 139.43px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border-radius: var(--border-radius);
+}
+
+.logo:hover {
+    opacity: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+.logo:active {
+    transform: translateY(0);
 }
 
 .logo img {
@@ -58,7 +71,7 @@
     text-decoration: none;
     padding-block: 5px;
     padding-inline: 10px;
-    transition: opacity var(--transition-fast);
+    transition: all var(--transition-fast);
     white-space: nowrap;
     display: flex;
     align-items: center;
@@ -71,34 +84,12 @@
 }
 
 .nav-item:hover {
-    opacity: 0.8;
-}
-
-/* Login Button */
-.login-btn {
-    width: 97px;
-    height: 44px;
-    background-color: var(--primary-color);
-    border: none;
-    border-radius: var(--border-radius);
-    font-family: var(--font-family);
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 29.05px;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.login-btn:hover {
     opacity: var(--primary-hover);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 }
 
-.login-btn:active {
+.nav-item:active {
     transform: translateY(0);
 }
+
+/* Login Button - estilos movidos para buttons.css */

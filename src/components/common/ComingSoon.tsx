@@ -1,5 +1,5 @@
 import React from "react";
-import type { ComingSoonProps } from "../../types";
+import type { ComingSoonProps } from "../../shared/types";
 
 const ComingSoon: React.FC<ComingSoonProps> = React.memo(({ pageName }) => {
     return (

@@ -1,9 +1,9 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Header, Footer } from "./components";
-import { Home, Eventos, Jogos, Participantes, Emprestimos, Login } from "./pages";
-import { ROUTES } from "./constants";
-import "./styles/Main.css";
+import { Header, Footer } from "../components";
+import { Home, Eventos, Jogos, Participantes, Emprestimos, Login } from "../pages";
+import { ROUTES } from "../shared/constants";
+import "../styles/Main.css";
 
 const App: React.FC = () => {
     return (
