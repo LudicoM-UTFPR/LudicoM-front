@@ -22,7 +22,8 @@ export interface Evento {
 }
 
 export interface Jogo {
-  id: number;
+  // `id` agora pode ser UUID string proveniente do backend (campo `uid`) — usando string para compatibilidade
+  id: string;
   nome: string;
   nomeAlternativo: string;
   anoPublicacao: number;

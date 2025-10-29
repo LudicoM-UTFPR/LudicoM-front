@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { generateId as generateIdUtil } from '../utils';
 
 /**
  * Hook personalizado para operações CRUD padrão
@@ -74,7 +75,19 @@ export function useCrudOperations<T extends { id: number | string }>() {
     prepareNewItem?: (item: any) => T
   ) => {
     return (novoItem: any) => {
-      const id = generateId ? generateId(items) : Math.max(...items.map(i => Number(i.id)), 0) + 1;
+      let id: number | string;
+
+      if (generateId) {
+        id = generateId(items);
+      } else {
+        // Decide gerador de id baseado no tipo do primeiro item (se existir)
+        if (items.length > 0 && typeof items[0].id === 'string') {
+          id = generateIdUtil();
+        } else {
+          // Mantém comportamento legacy numérico
+          id = Math.max(...items.map(i => Number(i.id)), 0) + 1;
+        }
+      }
       const itemComId = prepareNewItem 
         ? prepareNewItem({ ...novoItem, id })
         : { ...novoItem, id };

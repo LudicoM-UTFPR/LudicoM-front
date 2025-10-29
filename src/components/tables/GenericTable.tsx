@@ -12,7 +12,7 @@ interface GenericTableProps<T> {
   tableTitle: string;
 }
 
-const GenericTable = <T extends { id: number }>({
+const GenericTable = <T extends { id: number | string }>({
   data,
   columns,
   actions = [],
