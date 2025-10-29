@@ -1,5 +1,5 @@
 import React from "react";
-import type { SearchIconProps } from "../../types";
+import type { SearchIconProps } from "../../shared/types";
 
 const SearchIcon: React.FC<SearchIconProps> = React.memo(({ 
     width = 24, 

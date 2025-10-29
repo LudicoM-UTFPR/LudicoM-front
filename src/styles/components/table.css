@@ -1,80 +1,28 @@
-/* Tabela de Empréstimos Ativos */
-.tabela-emprestimo {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 24px;
-    width: 100%;
-    max-width: 1200px;
-    padding-inline: 20px;
-}
+/* Layouts de tabela movidos para layout.css */
 
-/* Campo de Busca */
-.busca-container {
-    width: 100%;
-    max-width: 576px;
-    height: 51px;
-    background-color: var(--bg-light);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm);
-    display: flex;
-    align-items: center;
-    position: relative;
-}
-
-.busca-input {
-    flex: 1;
-    height: 100%;
-    border: none;
-    background: transparent;
-    padding-inline-start: 12px;
-    padding-inline-end: 53px;
-    font-family: var(--font-family);
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 29.05px;
-    color: var(--text-dark);
-    outline: none;
-}
-
-.busca-input::placeholder {
-    color: var(--text-secondary);
-}
-
-.busca-input:hover,
-.busca-input:focus {
-    opacity: 0.75;
-}
-
-.busca-btn {
-    position: absolute;
-    right: 12px;
-    width: 29px;
-    height: 29px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+/* Componentes de busca movidos para search.css */
 
 /* Wrapper da Tabela */
 .tabela-wrapper {
     width: 100%;
-    max-width: 970px;
+    /* max-width: 1200px; */
     overflow-x: auto;
     overflow-y: visible;
     -webkit-overflow-scrolling: touch;
+    display: flex;
+    /* justify-content: center; */
 }
 
 .tabela {
-    width: 100%;
+    /* width: 100%; */
     border-collapse: separate;
     border-spacing: 0;
     border-top: none;
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0px 0px;
-    table-layout: fixed;
+    table-layout: auto;
+    /* min-width: 1000px; */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Título da Tabela (caption) */
@@ -82,10 +30,8 @@
     font-family: var(--font-family);
     font-weight: 700;
     font-size: 20px;
-    line-height: 24.2px;
     color: var(--text-primary);
     background-color: var(--bg-tertiary);
-    height: 34px;
     border-bottom: 1px solid var(--border-color);
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0px 0px;
     caption-side: top;
@@ -107,7 +53,6 @@
     font-family: var(--font-family);
     font-weight: 700;
     font-size: 20px;
-    line-height: 24.2px;
     color: var(--text-primary);
     height: 48px;
     border-right: 1px solid var(--border-color);
@@ -119,20 +64,8 @@
     vertical-align: middle;
 }
 
-.tabela-header:nth-child(1) {
-    width: 24%;
-}
-
-.tabela-header:nth-child(2) {
-    width: 26%;
-}
-
-.tabela-header:nth-child(3) {
-    width: 30%;
-}
-
-.tabela-header:nth-child(4) {
-    width: 20%;
+/* pegar a ultima tabela-header filha */
+.tabela-header:last-child {
     border-right: none;
 }
 
@@ -145,11 +78,20 @@
 .tabela-row {
     height: 48px;
     border-bottom: 1px solid var(--border-color);
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
 }
 
 .tabela-row:hover {
-    outline: 3px solid var(--primary-color);
-    outline-offset: -1px;
+    /* background-color: rgba(231, 111, 81, 0.08) !important; */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    /* transition: all 0.2s ease-in-out; */
+    border-left: 3px solid var(--primary-color);
+}
+
+.tabela-row:hover .tabela-cell-content {
+    font-weight: 500;
 }
 
 .tabela-row:nth-child(odd) {
@@ -165,7 +107,6 @@
     font-family: var(--font-family);
     font-weight: 400;
     font-size: 20px;
-    line-height: 24.2px;
     color: var(--text-dark);
     border-right: 1px solid var(--border-color);
     padding: 12px 16px;
@@ -176,51 +117,27 @@
     white-space: nowrap;
 }
 
-.tabela-cell:nth-child(1) {
-    width: 24%;
-    max-width: 250px;
-    cursor: help;
-}
 
-.tabela-cell:nth-child(2) {
-    width: 26%;
-    max-width: 300px;
-    cursor: help;
-}
-
-.tabela-cell:nth-child(3) {
-    width: 30%;
-}
-
-.tabela-cell:nth-child(4) {
-    width: 20%;
+.tabela-cell:last-child {
     border-right: none;
 }
 
-/* Botão Devolver */
-.devolver-btn {
-    width: 99px;
-    height: 32px;
-    background-color: var(--primary-color);
-    border: none;
-    border-radius: var(--border-radius);
-    font-family: var(--font-family);
-    font-weight: 700;
-    font-size: 20px;
-    line-height: 32px;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all var(--transition-fast);
+/* Conteúdo das células com limitação de texto */
+.tabela-cell-content {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     display: inline-block;
-    vertical-align: middle;
-    text-align: center;
+    width: 100%;
 }
 
-.devolver-btn:hover {
-    opacity: var(--primary-hover);
-    transform: translateY(-1px);
-}
 
-.devolver-btn:active {
-    transform: translateY(0);
-}
+
+/* Grupos de ação movidos para layout.css */
+
+/* Abas e badges movidos para layout.css e badges.css */
+
+
+
+/* Status movidos para badges.css */

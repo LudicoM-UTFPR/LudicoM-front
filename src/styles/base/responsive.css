@@ -61,10 +61,7 @@
         gap: 14px;
     }
 
-    .acao-btn {
-        width: 240px;
-        font-size: 22px;
-    }
+
 
     .tabela-emprestimo {
         padding-inline: 20px;
@@ -85,11 +82,7 @@
         padding-inline: 12px;
     }
 
-    .devolver-btn {
-        width: 80px;
-        height: 28px;
-        font-size: 16px;
-    }
+
 }
 
 /* Tablet Small */
@@ -143,11 +136,7 @@
         gap: 12px;
     }
 
-    .acao-btn {
-        width: 220px;
-        font-size: 20px;
-        min-height: 44px;
-    }
+
 
     .tabela-wrapper {
         overflow-x: auto;
@@ -174,11 +163,7 @@
         height: auto;
     }
 
-    .devolver-btn {
-        width: 75px;
-        height: 28px;
-        font-size: 14px;
-    }
+
 
     .busca-input {
         font-size: 18px;
@@ -228,12 +213,7 @@
         flex-direction: column;
     }
 
-    .acao-btn {
-        width: 100%;
-        max-width: 320px;
-        font-size: 18px;
-        min-height: 48px;
-    }
+
 
     .busca-container {
         height: 46px;
@@ -258,11 +238,7 @@
         padding-inline: 8px;
     }
 
-    .devolver-btn {
-        width: 70px;
-        height: 26px;
-        font-size: 13px;
-    }
+
 }
 
 /* Mobile */
@@ -305,11 +281,7 @@
         gap: 8px;
     }
 
-    .acao-btn {
-        width: 100%;
-        max-width: 280px;
-        font-size: 16px;
-    }
+
 
     .busca-container {
         height: 44px;
@@ -352,9 +324,5 @@
         min-height: 40px;
     }
 
-    .devolver-btn {
-        width: 65px;
-        height: 24px;
-        font-size: 12px;
-    }
+
 }
