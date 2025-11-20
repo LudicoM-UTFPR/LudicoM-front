@@ -123,7 +123,17 @@ export const markEmprestimoDevolvidoLocal = (id: number, hora?: string) => {
  * Gera ID único para elementos
  */
 export const generateId = (prefix: string = 'id'): string => {
-    return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Gera UUIDv4 e opcionalmente adiciona prefixo para legibilidade
+    const uuidv4 = (): string => {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
+    };
+
+    const uuid = uuidv4();
+    return prefix ? `${prefix}-${uuid}` : uuid;
 };
 
 /**
@@ -180,7 +190,8 @@ export const validateEntityData = <T extends Record<string, any>>(
 // Schemas de validação para as entidades
 export const ENTITY_SCHEMAS = {
     jogo: {
-        id: 'number' as const,
+        // Agora o id dos jogos é tratado como string (UUID) para compatibilidade com o backend
+        id: 'string' as const,
         nome: 'string' as const,
         nomeAlternativo: 'string' as const,
         anoPublicacao: 'number' as const,

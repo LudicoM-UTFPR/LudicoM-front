@@ -1,6 +1,8 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
+const webpack = require("webpack");
+require("dotenv").config();
 
 module.exports = {
     entry: "./src/app/index.tsx",
@@ -22,6 +24,7 @@ module.exports = {
         port: 3000,
         open: true,
         hot: true,
+        historyApiFallback: true,
     },
     module: {
         rules: [
@@ -59,6 +62,9 @@ module.exports = {
                     },
                 },
             ],
+        }),
+        new webpack.DefinePlugin({
+            "process.env": JSON.stringify(process.env),
         }),
     ],
     resolve: {

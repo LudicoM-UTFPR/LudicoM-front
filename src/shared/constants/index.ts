@@ -28,6 +28,8 @@ export const MESSAGES: AppMessages = {
     SEARCH_PLACEHOLDER: "Buscar por jogo ou participante...",
 };
 
+// URL base da API definida no arquivo .env
+export const API_BASE_URL: string = process.env.REACT_APP_API_BASE_URL as string;
 // Exportar configurações de campos do DetailModal
 export * from './detailFields';
 
