@@ -1,5 +1,11 @@
 // Tipos globais da aplicação
 
+export interface Instituicao {
+  id: number;
+  nome: string;
+  endereco: string;
+}
+
 export interface Emprestimo {
   id: number;
   idJogo: number;
@@ -17,7 +23,7 @@ export interface Emprestimo {
 export interface Evento {
   id: number;
   data: string;
-  instituicao: string;
+  instituicao: Instituicao;
   horarioEvento: string;
 }
 

@@ -203,6 +203,11 @@ export const ENTITY_SCHEMAS = {
         criadoQuando: 'string' as const,
         atualizadoQuando: 'string' as const
     },
+    instituicao: {
+        id: 'number' as const,
+        nome: 'string' as const,
+        endereco: 'string' as const
+    },
     participante: {
         id: 'number' as const,
         nome: 'string' as const,
@@ -212,9 +217,9 @@ export const ENTITY_SCHEMAS = {
     },
     evento: {
         id: 'number' as const,
-        nome: 'string' as const,
         data: 'string' as const,
-        horario: 'string' as const
+        instituicao: 'instituicao' as const,
+        horarioEvento: 'string' as const
     },
     emprestimo: {
         id: 'number' as const,
