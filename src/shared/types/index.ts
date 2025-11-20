@@ -21,7 +21,7 @@ export interface Emprestimo {
 }
 
 export interface Evento {
-  id: number;
+  id: string;
   data: string;
   idInstituicao?: string;
   instituicao: Instituicao;

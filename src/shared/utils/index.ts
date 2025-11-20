@@ -216,7 +216,7 @@ export const ENTITY_SCHEMAS = {
         ra: 'string' as const
     },
     evento: {
-        id: 'number' as const,
+        id: 'string' as const,
         data: 'string' as const,
         idInstituicao: 'string' as const,
         instituicao: 'instituicao' as const,

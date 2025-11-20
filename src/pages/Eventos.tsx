@@ -44,10 +44,11 @@ const Eventos: React.FC = () => {
   );
 
   const handleExcluir = async (evento: Evento) => {
+    console.log(evento);
     if (!window.confirm(`Tem certeza que deseja excluir o evento?\n\nData: ${evento.data}\nInstituição: ${evento.instituicao}`)) return;
     try {
       if (deleteEvento) {
-        await deleteEvento(evento.id);
+        await deleteEvento(String(evento.id));
         setEventos(prev => prev.filter(e => e.id !== evento.id));
         showSuccess('Evento excluído com sucesso!');
       } else {
