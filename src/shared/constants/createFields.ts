@@ -174,24 +174,22 @@ export const eventoCreateFields: CreateField<Evento>[] = [
   { 
     key: 'horaInicio', 
     label: 'Horário de Início do Evento', 
-    type: 'text', 
+    type: 'time', 
     required: true,
-    placeholder: '14:00',
     defaultValue: '14:00',
     validation: (value: string) => {
-      if (!ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
+      if (!value) return 'Horário de início é obrigatório';
       return null;
     }
   },
   { 
     key: 'horaFim', 
     label: 'Horário de Término do Evento', 
-    type: 'text', 
+    type: 'time', 
     required: true,
-    placeholder: '18:00',
     defaultValue: '18:00',
     validation: (value: string) => {
-      if (!ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
+      if (!value) return 'Horário de término é obrigatório';
       return null;
     }
   }

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 export interface CreateField<T> {
   key: keyof T;
   label: string;
-  type: 'text' | 'email' | 'number' | 'date' | 'boolean' | 'select' | 'autocomplete';
+  type: 'text' | 'email' | 'number' | 'date' | 'time' | 'boolean' | 'select' | 'autocomplete';
   required?: boolean;
   placeholder?: string;
   defaultValue?: any;
@@ -181,6 +181,16 @@ export function CreateModal<T extends { id: number | string }>({
             type="date"
             className={`field-input ${error ? 'error' : ''}`}
             value={value ? String(value).split('T')[0] : ''}
+            onChange={(e) => handleInputChange(field.key, e.target.value)}
+          />
+        );
+
+      case 'time':
+        return (
+          <input
+            type="time"
+            className={`field-input ${error ? 'error' : ''}`}
+            value={value ? String(value).substring(0, 5) : ''}
             onChange={(e) => handleInputChange(field.key, e.target.value)}
           />
         );

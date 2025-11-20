@@ -86,15 +86,10 @@ const Eventos: React.FC = () => {
   const localSalvarCriacao = createHandleSalvarCriacao(eventos, setEventos);
   const handleSalvarCriacao = async (novo: any) => {
     try {
-      if (createEvento) {
-        console.log('Dados recebidos do formulário:', novo); // Debug
-        console.log('Lista de instituições:', instituicoes); // Debug
-        
+      if (createEvento) {       
         // Encontra a instituição pelo nome para pegar o ID
         const instituicaoSelecionada = instituicoes.find(inst => inst.nome === novo.instituicao);
-        
-        console.log('Instituição selecionada:', instituicaoSelecionada); // Debug
-        
+
         if (!instituicaoSelecionada) {
           showError('Instituição não encontrada. Por favor, selecione uma instituição válida.');
           return;
@@ -107,8 +102,6 @@ const Eventos: React.FC = () => {
           horaInicio: novo.horaInicio,
           horaFim: novo.horaFim
         };
-
-        console.log('Payload enviado:', payload); // Debug
 
         const saved = await createEvento(payload);
         
