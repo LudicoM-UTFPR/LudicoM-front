@@ -30,10 +30,20 @@ export async function createEvento(payload: Partial<Evento>): Promise<Evento> {
       headers: getAuthHeaders(),
       body: JSON.stringify(payload)
     });
+    
+    const json = await res.json();
+    
     if (res.status !== 201 && !res.ok) {
+      // Se houver erros de validação, propaga com a estrutura
+      if (json.errors) {
+        const error: any = new Error(json.message || 'Erro de validação');
+        error.errors = json.errors;
+        error.status = res.status;
+        throw error;
+      }
       throw new Error(`HTTP ${res.status} - ${res.statusText}`);
     }
-    const json = await res.json();
+    
     const validated = validateEntityData<Evento>([json], ENTITY_SCHEMAS.evento as any)[0];
     return validated;
   } catch (e) {
@@ -50,10 +60,20 @@ export async function updateEvento(id: number | string, changes: Partial<Evento>
       headers: getAuthHeaders(),
       body: JSON.stringify(changes)
     });
+    
+    const json = await res.json();
+    
     if (!res.ok) {
+      // Se houver erros de validação, propaga com a estrutura
+      if (json.errors) {
+        const error: any = new Error(json.message || 'Erro de validação');
+        error.errors = json.errors;
+        error.status = res.status;
+        throw error;
+      }
       throw new Error(`HTTP ${res.status} - ${res.statusText}`);
     }
-    const json = await res.json();
+    
     const validated = validateEntityData<Evento>([json], ENTITY_SCHEMAS.evento as any)[0];
     return validated;
   } catch (e) {
@@ -70,6 +90,14 @@ export async function deleteEvento(id: number | string): Promise<void> {
       headers: getAuthHeaders()
     });
     if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      // Se houver erros de validação, propaga com a estrutura
+      if (json.errors) {
+        const error: any = new Error(json.message || 'Erro de validação');
+        error.errors = json.errors;
+        error.status = res.status;
+        throw error;
+      }
       throw new Error(`HTTP ${res.status} - ${res.statusText}`);
     }
   } catch (e) {

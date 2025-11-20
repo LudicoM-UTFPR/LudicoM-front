@@ -80,8 +80,30 @@ export const eventoDetailFields: DetailField<Evento>[] = [
   },
   { key: 'instituicao', label: 'Instituição', type: 'text' },
   { 
-    key: 'horarioEvento', 
-    label: 'Horário do Evento', 
+    key: 'horaInicio', 
+    label: 'Horário de Início', 
+    type: 'custom',
+    render: (value) => {
+      const timeStr = value as string;
+      // Se já está no formato HH:mm, retorna diretamente
+      if (timeStr && timeStr.includes(':') && timeStr.length <= 5) {
+        return timeStr;
+      }
+      // Caso contrário, tenta converter de ISO para HH:mm
+      try {
+        const date = new Date(timeStr);
+        return date.toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch {
+        return timeStr || 'Horário inválido';
+      }
+    }
+  },
+  { 
+    key: 'horaFim', 
+    label: 'Horário de Término', 
     type: 'custom',
     render: (value) => {
       const timeStr = value as string;

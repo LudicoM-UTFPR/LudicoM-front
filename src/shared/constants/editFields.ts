@@ -166,11 +166,22 @@ export const eventoEditFields: EditField<Evento>[] = [
     }
   },
   { 
-    key: 'horarioEvento', 
-    label: 'Horário do Evento', 
+    key: 'horaInicio', 
+    label: 'Horário de Início do Evento', 
     type: 'text', 
     required: true,
-    placeholder: '14:30',
+    placeholder: '14:00',
+    validation: (value: string) => {
+      if (!ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
+      return null;
+    }
+  },
+  { 
+    key: 'horaFim', 
+    label: 'Horário de Término do Evento', 
+    type: 'text', 
+    required: true,
+    placeholder: '18:00',
     validation: (value: string) => {
       if (!ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
       return null;

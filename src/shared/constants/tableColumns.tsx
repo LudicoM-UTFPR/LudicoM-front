@@ -51,7 +51,11 @@ export const EVENTO_COLUMNS: TableColumn<Evento>[] = [
       </span>
     )
   },
-  { key: 'horarioEvento', label: 'Horário' }
+  { 
+    key: 'horaInicio', 
+    label: 'Horário',
+    render: (value: string, item: Evento) => `${value} - ${item.horaFim}`
+  }
 ];
 
 // Colunas para Empréstimos - Lista geral

@@ -165,21 +165,31 @@ export const eventoCreateFields: CreateField<Evento>[] = [
     label: 'Instituição', 
     type: 'text', 
     required: true,
-    placeholder: 'Nome da instituição...',
-    defaultValue: 'UTFPR - ',
+    placeholder: 'Digite para buscar instituição...',
     validation: (value: string) => {
-      if (value.length < 2) return 'Instituição deve ter pelo menos 2 caracteres';
-      if (value.length > 100) return 'Instituição deve ter no máximo 100 caracteres';
+      if (!value || value.length < 2) return 'Selecione uma instituição';
       return null;
     }
   },
   { 
-    key: 'horarioEvento', 
-    label: 'Horário do Evento', 
+    key: 'horaInicio', 
+    label: 'Horário de Início do Evento', 
     type: 'text', 
     required: true,
-    placeholder: '14:30',
+    placeholder: '14:00',
     defaultValue: '14:00',
+    validation: (value: string) => {
+      if (!ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
+      return null;
+    }
+  },
+  { 
+    key: 'horaFim', 
+    label: 'Horário de Término do Evento', 
+    type: 'text', 
+    required: true,
+    placeholder: '18:00',
+    defaultValue: '18:00',
     validation: (value: string) => {
       if (!ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
       return null;

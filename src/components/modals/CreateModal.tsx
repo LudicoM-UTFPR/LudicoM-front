@@ -3,12 +3,13 @@ import React, { useState, useEffect } from 'react';
 export interface CreateField<T> {
   key: keyof T;
   label: string;
-  type: 'text' | 'email' | 'number' | 'date' | 'boolean' | 'select';
+  type: 'text' | 'email' | 'number' | 'date' | 'boolean' | 'select' | 'autocomplete';
   required?: boolean;
   placeholder?: string;
   defaultValue?: any;
   options?: { value: string | number | boolean; label: string }[];
   validation?: (value: any) => string | null;
+  dataListId?: string; // Para autocomplete
 }
 
 export interface CreateModalProps<T> {
@@ -142,6 +143,25 @@ export function CreateModal<T extends { id: number | string }>({
               </option>
             ))}
           </select>
+        );
+
+      case 'autocomplete':
+        return (
+          <>
+            <input
+              type="text"
+              className={`field-input ${error ? 'error' : ''}`}
+              value={String(value || '')}
+              placeholder={field.placeholder}
+              list={field.dataListId}
+              onChange={(e) => handleInputChange(field.key, e.target.value)}
+            />
+            <datalist id={field.dataListId}>
+              {field.options?.map((option) => (
+                <option key={String(option.value)} value={String(option.label)} />
+              ))}
+            </datalist>
+          </>
         );
 
       case 'number':

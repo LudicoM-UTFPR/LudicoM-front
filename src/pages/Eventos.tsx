@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '../components';
+import { useToast } from '../components/common';
 import { eventoDetailFields, eventoEditFields, eventoCreateFields, EVENTO_COLUMNS } from '../shared/constants';
-import { useCrudOperations, useEventos } from '../shared/hooks';
+import { useCrudOperations, useEventos, useInstituicoes } from '../shared/hooks';
 import { handleError } from '../shared/utils';
 import type { Evento, TableAction } from '../shared/types';
+import type { CreateField } from '../components/modals/CreateModal';
 
 const Eventos: React.FC = () => {
   const { eventos: remoteEventos, loading, error, createEvento, updateEvento, deleteEvento } = useEventos();
+  const { instituicoes } = useInstituicoes();
+  const { showErrorList, showError, showSuccess } = useToast();
   const [eventos, setEventos] = useState<Evento[]>([]);
   
   // Hook personalizado para operações CRUD
@@ -45,11 +49,17 @@ const Eventos: React.FC = () => {
       if (deleteEvento) {
         await deleteEvento(evento.id);
         setEventos(prev => prev.filter(e => e.id !== evento.id));
+        showSuccess('Evento excluído com sucesso!');
       } else {
         baseHandleExcluir(evento);
       }
-    } catch (e) {
+    } catch (e: any) {
       handleError(e, 'Eventos - delete');
+      if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao excluir evento');
+      }
       baseHandleExcluir(evento); // fallback local
     }
   };
@@ -61,9 +71,15 @@ const Eventos: React.FC = () => {
     try {
       if (updateEvento) {
         await updateEvento(eventoAtualizado.id, eventoAtualizado);
+        showSuccess('Evento atualizado com sucesso!');
       }
-    } catch (e) {
+    } catch (e: any) {
       handleError(e, 'Eventos - update');
+      if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao atualizar evento');
+      }
     }
   };
 
@@ -71,14 +87,50 @@ const Eventos: React.FC = () => {
   const handleSalvarCriacao = async (novo: any) => {
     try {
       if (createEvento) {
-        const saved = await createEvento(novo);
-        setEventos(prev => [...prev, saved]);
+        console.log('Dados recebidos do formulário:', novo); // Debug
+        console.log('Lista de instituições:', instituicoes); // Debug
+        
+        // Encontra a instituição pelo nome para pegar o ID
+        const instituicaoSelecionada = instituicoes.find(inst => inst.nome === novo.instituicao);
+        
+        console.log('Instituição selecionada:', instituicaoSelecionada); // Debug
+        
+        if (!instituicaoSelecionada) {
+          showError('Instituição não encontrada. Por favor, selecione uma instituição válida.');
+          return;
+        }
+
+        // Transforma o payload: remove 'instituicao' e adiciona 'idInstituicao'
+        const payload = {
+          idInstituicao: instituicaoSelecionada.uid,
+          data: novo.data,
+          horaInicio: novo.horaInicio,
+          horaFim: novo.horaFim
+        };
+
+        console.log('Payload enviado:', payload); // Debug
+
+        const saved = await createEvento(payload);
+        
+        // Adiciona a instituição completa ao evento para exibição local
+        const eventoComInstituicao = {
+          ...saved,
+          instituicao: instituicaoSelecionada
+        };
+        
+        setEventos(prev => [...prev, eventoComInstituicao]);
+        showSuccess('Evento criado com sucesso!');
       } else {
         localSalvarCriacao(novo);
       }
-    } catch (e) {
+    } catch (e: any) {
       handleError(e, 'Eventos - create');
-      localSalvarCriacao(novo); // fallback
+      if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao criar evento');
+      }
+      // Não faz fallback local em caso de erro de validação
     }
   };
 
@@ -87,6 +139,23 @@ const Eventos: React.FC = () => {
     { label: 'Editar', onClick: handleEditar, variant: 'secondary' },
     { label: 'Excluir', onClick: handleExcluir, variant: 'danger' }
   ];
+
+  // Campos de criação com lista de instituições
+  const eventoCreateFieldsWithOptions: CreateField<Evento>[] = useMemo(() => {
+    return eventoCreateFields.map(field => {
+      if (field.key === 'instituicao') {
+        return {
+          ...field,
+          type: 'select' as const,
+          options: instituicoes.map(inst => ({
+            value: inst.nome,
+            label: inst.nome
+          }))
+        };
+      }
+      return field;
+    });
+  }, [instituicoes]);
 
   return (
     <div className="page-container">
@@ -129,7 +198,7 @@ const Eventos: React.FC = () => {
         isOpen={isCreateModalOpen}
         onClose={closeCreateModal}
         onSave={handleSalvarCriacao}
-        fields={eventoCreateFields}
+        fields={eventoCreateFieldsWithOptions}
         title="Criar Novo Evento"
       />
     </div>

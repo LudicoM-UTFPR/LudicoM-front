@@ -19,6 +19,7 @@
 @import './components/footer.css';
 @import './components/page-header.css';
 @import './components/modal.css';
+@import './components/toast.css';
 
 /* Responsive Styles */
 @import './base/responsive.css';

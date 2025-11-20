@@ -238,7 +238,7 @@ export function useEventos() {
   }, []);
 
   async function createRemoteEvento(novo: Partial<Evento>): Promise<Evento> {
-    try {
+    try { 
       const saved = await createEvento(novo);
       setEventos(prev => [...prev, saved]);
       return saved;
