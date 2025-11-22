@@ -42,7 +42,7 @@ export async function createInstituicao(payload: Partial<Instituicao>): Promise<
   }
 }
 
-export async function updateInstituicao(id: number | string, changes: Partial<Instituicao>): Promise<Instituicao> {
+export async function updateInstituicao(id: string, changes: Partial<Instituicao>): Promise<Instituicao> {
   const url = `${ENDPOINT}/${encodeURIComponent(String(id))}`;
   try {
     const res = await fetch(url, {
@@ -62,7 +62,7 @@ export async function updateInstituicao(id: number | string, changes: Partial<In
   }
 }
 
-export async function deleteInstituicao(id: number | string): Promise<void> {
+export async function deleteInstituicao(id: string): Promise<void> {
   const url = `${ENDPOINT}/${encodeURIComponent(String(id))}`;
   try {
     const res = await fetch(url, {

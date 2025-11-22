@@ -3,7 +3,7 @@ import { Jogo, Participante, Evento, Emprestimo } from '../types';
 
 // Configuração de campos para Jogos
 export const jogoDetailFields: DetailField<Jogo>[] = [
-  { key: 'id', label: 'ID', type: 'number' },
+  { key: 'id', label: 'ID', type: 'text' },
   { key: 'nome', label: 'Nome do Jogo', type: 'text' },
   { key: 'nomeAlternativo', label: 'Nome Alternativo', type: 'text' },
   { key: 'anoPublicacao', label: 'Ano de Publicação', type: 'number' },
@@ -45,7 +45,7 @@ export const jogoDetailFields: DetailField<Jogo>[] = [
 
 // Configuração de campos para Participantes
 export const participanteDetailFields: DetailField<Participante>[] = [
-  { key: 'id', label: 'ID', type: 'number' },
+  { key: 'id', label: 'ID', type: 'text' },
   { key: 'nome', label: 'Nome Completo', type: 'text' },
   { key: 'email', label: 'E-mail', type: 'text' },
   { key: 'documento', label: 'Documento', type: 'text' },
@@ -132,12 +132,12 @@ export const eventoDetailFields: DetailField<Evento>[] = [
 
 // Configuração de campos para Empréstimos
 export const emprestimoDetailFields: DetailField<Emprestimo>[] = [
-  { key: 'id', label: 'ID', type: 'number' },
-  { key: 'idJogo', label: 'ID do Jogo', type: 'number' },
+  { key: 'id', label: 'ID', type: 'text' },
+  { key: 'idJogo', label: 'ID do Jogo', type: 'text' },
   { key: 'jogo', label: 'Nome do Jogo', type: 'text' },
-  { key: 'idParticipante', label: 'ID do Participante', type: 'number' },
+  { key: 'idParticipante', label: 'ID do Participante', type: 'text' },
   { key: 'participante', label: 'Nome do Participante', type: 'text' },
-  { key: 'idEvento', label: 'ID do Evento', type: 'number' },
+  { key: 'idEvento', label: 'ID do Evento', type: 'text' },
   { 
     key: 'horaEmprestimo', 
     label: 'Hora do Empréstimo', 

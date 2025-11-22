@@ -39,9 +39,9 @@ export function useCrudOperations<T extends { id: number | string }>() {
   ) => {
     return (item: T) => {
       if (window.confirm(getConfirmMessage(item))) {
-        setItems(items.filter(i => i.id !== item.id));
+        setItems(items.filter(i => String(i.id) !== String(item.id)));
         // Fecha modal se o item excluído estava sendo visualizado
-        if (selectedItem?.id === item.id) {
+        if (selectedItem && String(selectedItem.id) === String(item.id)) {
           setIsModalOpen(false);
           setSelectedItem(null);
         }
@@ -59,7 +59,7 @@ export function useCrudOperations<T extends { id: number | string }>() {
       const finalItem = updateItemData ? updateItemData(itemAtualizado) : itemAtualizado;
       
       setItems(items.map(item => 
-        item.id === finalItem.id ? finalItem : item
+        String(item.id) === String(finalItem.id) ? finalItem : item
       ));
       
       // Atualiza o item selecionado para refletir as mudanças no DetailModal
@@ -84,8 +84,8 @@ export function useCrudOperations<T extends { id: number | string }>() {
         if (items.length > 0 && typeof items[0].id === 'string') {
           id = generateIdUtil();
         } else {
-          // Mantém comportamento legacy numérico
-          id = Math.max(...items.map(i => Number(i.id)), 0) + 1;
+          // Mesmo que coleção atual esteja vazia ou numérica, padronize como string
+          id = generateIdUtil();
         }
       }
       const itemComId = prepareNewItem 

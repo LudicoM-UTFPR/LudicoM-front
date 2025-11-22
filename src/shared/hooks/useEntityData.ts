@@ -40,11 +40,11 @@ export function useParticipantes() {
   const createParticipante = useCallback((novoParticipante: Omit<Participante, 'id'>) => {
     const participanteComId = {
       ...novoParticipante,
-      id: Math.max(...participantes.map(p => p.id), 0) + 1
-    };
+      id: generateId('participante')
+    } as Participante;
     setParticipantes(prev => [...prev, participanteComId]);
     return participanteComId;
-  }, [participantes]);
+  }, []);
 
   const updateParticipante = useCallback((participanteAtualizado: Participante) => {
     setParticipantes(prev => 
@@ -52,8 +52,8 @@ export function useParticipantes() {
     );
   }, []);
 
-  const deleteParticipante = useCallback((id: number) => {
-    setParticipantes(prev => prev.filter(p => p.id !== id));
+  const deleteParticipante = useCallback((id: string) => {
+    setParticipantes(prev => prev.filter(p => String(p.id) !== String(id)));
   }, []);
 
   return {
@@ -173,8 +173,13 @@ export function useJogos() {
   async function updateRemoteJogo(id: string, changes: Partial<Jogo>): Promise<Jogo> {
     try {
       const saved = await updateJogo(id, changes);
-      setJogos(prev => prev.map(j => (String(j.id) === String(saved.id) ? saved : j)));
-      try { sessionStorage.setItem('ludicom:jogos:cache', JSON.stringify({ data: (await Promise.resolve(jogos)), timestamp: Date.now() })); } catch {}
+      setJogos(prev => {
+        const next = prev.map(j => (String(j.id) === String(saved.id) ? saved : j));
+        try {
+          sessionStorage.setItem('ludicom:jogos:cache', JSON.stringify({ data: next, timestamp: Date.now() }));
+        } catch {}
+        return next;
+      });
       return saved;
     } catch (e) {
       handleError(e, 'useJogos - updateRemoteJogo');
@@ -185,8 +190,13 @@ export function useJogos() {
   async function deleteRemoteJogo(id: string): Promise<void> {
     try {
       await deleteJogo(id);
-      setJogos(prev => prev.filter(j => String(j.id) !== String(id)));
-      try { sessionStorage.setItem('ludicom:jogos:cache', JSON.stringify({ data: (await Promise.resolve(jogos)), timestamp: Date.now() })); } catch {}
+      setJogos(prev => {
+        const next = prev.filter(j => String(j.id) !== String(id));
+        try {
+          sessionStorage.setItem('ludicom:jogos:cache', JSON.stringify({ data: next, timestamp: Date.now() }));
+        } catch {}
+        return next;
+      });
     } catch (e) {
       handleError(e, 'useJogos - deleteRemoteJogo');
       throw e;
@@ -244,14 +254,14 @@ export function useEventos() {
       return saved;
     } catch (e) {
       // fallback local
-      const localId = Math.max(...eventos.map(ev => ev.id), 0) + 1;
+      const localId = generateId('evento');
       const localItem = { ...novo, id: localId } as Evento;
       setEventos(prev => [...prev, localItem]);
       throw e;
     }
   }
 
-  async function updateRemoteEvento(id: number | string, changes: Partial<Evento>): Promise<Evento> {
+  async function updateRemoteEvento(id: string, changes: Partial<Evento>): Promise<Evento> {
     try {
       const saved = await updateEvento(id, changes);
       setEventos(prev => prev.map(ev => (ev.id === saved.id ? saved : ev)));
@@ -262,10 +272,10 @@ export function useEventos() {
     }
   }
 
-  async function deleteRemoteEvento(id: number | string): Promise<void> {
+  async function deleteRemoteEvento(id: string): Promise<void> {
     try {
       await deleteEvento(id);
-      setEventos(prev => prev.filter(ev => ev.id !== Number(id)));
+      setEventos(prev => prev.filter(ev => String(ev.id) !== String(id)));
     } catch (e) {
       handleError(e, 'useEventos - delete');
       throw e;
@@ -297,10 +307,10 @@ export function useEmprestimos() {
         
         // Validação e processamento dos dados (similar ao código da página Emprestimos)
         const allValidatedData = emprestimosData.default.map((item): Emprestimo => ({
-          id: Number(item.id),
-          idJogo: Number(item.idJogo),
-          idParticipante: Number(item.idParticipante),
-          idEvento: Number(item.idEvento),
+          id: String(item.id),
+          idJogo: String(item.idJogo),
+          idParticipante: String(item.idParticipante),
+          idEvento: String(item.idEvento),
           horaEmprestimo: String(item.horaEmprestimo || ''),
           horaDevolucao: item.horaDevolucao ? String(item.horaDevolucao) : null,
           isDevolvido: Boolean(item.isDevolvido),
@@ -330,11 +340,11 @@ export function useEmprestimos() {
   const createEmprestimo = useCallback((novoEmprestimo: Omit<Emprestimo, 'id'>) => {
     const emprestimoComId = {
       ...novoEmprestimo,
-      id: Math.max(...emprestimosAtivos.map(e => e.id), ...historicoEmprestimos.map(e => e.id), 0) + 1
-    };
+      id: generateId('emprestimo')
+    } as Emprestimo;
     setEmprestimosAtivos(prev => [...prev, emprestimoComId]);
     return emprestimoComId;
-  }, [emprestimosAtivos, historicoEmprestimos]);
+  }, []);
 
   return {
     emprestimosAtivos,

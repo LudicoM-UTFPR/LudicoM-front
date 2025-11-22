@@ -76,7 +76,7 @@ export async function createEvento(payload: Partial<Evento>): Promise<Evento> {
 }
 
 export async function updateEvento(
-  id: number | string,
+  id: string,
   changes: Partial<Evento>
 ): Promise<Evento> {
   const url = `${ENDPOINT}/${encodeURIComponent(String(id))}`;
@@ -113,7 +113,7 @@ export async function updateEvento(
   }
 }
 
-export async function deleteEvento(id: number | string): Promise<void> {
+export async function deleteEvento(id: string): Promise<void> {
   const url = `${ENDPOINT}/${encodeURIComponent(String(id))}`;
   try {
     const res = await fetch(url, {

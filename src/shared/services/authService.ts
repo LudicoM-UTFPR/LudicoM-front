@@ -16,13 +16,5 @@ export function getAuthHeaders(): HeadersInit {
         'Content-Type': 'application/json',
     };
 
-    // Log para desenvolvimento
-    if (process.env.NODE_ENV === 'development') {
-        console.log('Auth headers being sent:', {
-            ...headers,
-            'Authorization': headers.Authorization.substring(0, 20) + '...' // Log parcial por segurança
-        });
-    }
-
     return headers;
 }

@@ -7,13 +7,14 @@ export interface Instituicao {
 }
 
 export interface Emprestimo {
-  id: number;
-  idJogo: number;
-  idParticipante: number;
-  idEvento: number;
+  id: string;
+  idJogo: string;
+  idParticipante: string;
+  idEvento: string;
   horaEmprestimo: string;
   horaDevolucao: string | null;
   isDevolvido: boolean;
+  observacoes?: string;
   // Campos computados para exibição (não persistidos)
   jogo?: string;
   participante?: string;
@@ -45,7 +46,7 @@ export interface Jogo {
 }
 
 export interface Participante {
-  id: number;
+  id: string;
   nome: string;
   email: string;
   documento: string;

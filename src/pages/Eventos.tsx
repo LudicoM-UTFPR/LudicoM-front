@@ -3,7 +3,7 @@ import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '.
 import { useToast } from '../components/common';
 import { eventoDetailFields, eventoEditFields, eventoCreateFields, EVENTO_COLUMNS } from '../shared/constants';
 import { useCrudOperations, useEventos, useInstituicoes } from '../shared/hooks';
-import { handleError } from '../shared/utils';
+import { handleError, ensureHHMMSS } from '../shared/utils';
 import type { Evento, TableAction } from '../shared/types';
 import type { CreateField } from '../components/modals/CreateModal';
 import type { EditField } from '../components/modals/EditModal';
@@ -81,8 +81,8 @@ const Eventos: React.FC = () => {
       const payload = {
         idInstituicao: instituicaoSelecionada.uid,
         data: eventoEditado.data,
-        horaInicio: eventoEditado.horaInicio,
-        horaFim: eventoEditado.horaFim
+        horaInicio: ensureHHMMSS(eventoEditado.horaInicio),
+        horaFim: ensureHHMMSS(eventoEditado.horaFim)
       };
 
       // Atualização otimista local (mantém objeto instituição para exibição)
@@ -95,8 +95,13 @@ const Eventos: React.FC = () => {
 
       if (updateEvento) {
         const atualizadoRemoto = await updateEvento(eventoLocalAtualizado.id, payload);
-        // Garantir que lista mantenha objeto instituição
-        const eventoFinal = { ...atualizadoRemoto, instituicao: instituicaoSelecionada } as Evento;
+        // Garantir que lista mantenha objeto instituição e normalizar horário para exibição (HH:mm)
+        const eventoFinal = {
+          ...atualizadoRemoto,
+          horaInicio: atualizadoRemoto?.horaInicio ? String(atualizadoRemoto.horaInicio).slice(0, 5) : atualizadoRemoto.horaInicio,
+          horaFim: atualizadoRemoto?.horaFim ? String(atualizadoRemoto.horaFim).slice(0, 5) : atualizadoRemoto.horaFim,
+          instituicao: instituicaoSelecionada
+        } as Evento;
         setEventos(prev => prev.map(e => e.id === eventoFinal.id ? eventoFinal : e));
         showSuccess('Evento atualizado com sucesso!');
       }
@@ -126,15 +131,17 @@ const Eventos: React.FC = () => {
         const payload = {
           idInstituicao: instituicaoSelecionada.uid,
           data: novo.data,
-          horaInicio: novo.horaInicio,
-          horaFim: novo.horaFim
+          horaInicio: ensureHHMMSS(novo.horaInicio),
+          horaFim: ensureHHMMSS(novo.horaFim)
         };
 
         const saved = await createEvento(payload);
         
-        // Adiciona a instituição completa ao evento para exibição local
+        // Adiciona a instituição completa e normaliza horário para exibição local
         const eventoComInstituicao = {
           ...saved,
+          horaInicio: saved?.horaInicio ? String(saved.horaInicio).slice(0, 5) : saved.horaInicio,
+          horaFim: saved?.horaFim ? String(saved.horaFim).slice(0, 5) : saved.horaFim,
           instituicao: instituicaoSelecionada
         };
         

@@ -28,8 +28,13 @@ export const MESSAGES: AppMessages = {
     SEARCH_PLACEHOLDER: "Buscar por jogo ou participante...",
 };
 
-// URL base da API definida no arquivo .env
-export const API_BASE_URL: string = process.env.REACT_APP_API_BASE_URL as string;
+// URL base da API definida no arquivo .env, com fallback seguro em dev
+export const API_BASE_URL: string = (process.env.REACT_APP_API_BASE_URL as string) || 'http://localhost:8080/api';
+
+if (!process.env.REACT_APP_API_BASE_URL && process.env.NODE_ENV === 'development') {
+    // Aviso apenas em desenvolvimento para facilitar configuração local
+    console.warn('[Config] REACT_APP_API_BASE_URL não definido. Usando http://localhost:8080/api');
+}
 // Exportar configurações de campos do DetailModal
 export * from './detailFields';
 
