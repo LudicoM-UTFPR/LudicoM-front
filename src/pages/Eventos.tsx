@@ -6,6 +6,7 @@ import { useCrudOperations, useEventos, useInstituicoes } from '../shared/hooks'
 import { handleError } from '../shared/utils';
 import type { Evento, TableAction } from '../shared/types';
 import type { CreateField } from '../components/modals/CreateModal';
+import type { EditField } from '../components/modals/EditModal';
 
 const Eventos: React.FC = () => {
   const { eventos: remoteEventos, loading, error, createEvento, updateEvento, deleteEvento } = useEventos();
@@ -66,12 +67,37 @@ const Eventos: React.FC = () => {
   };
 
   const localSalvarEdicao = createHandleSalvarEdicao(eventos, setEventos);
-  const handleSalvarEdicao = async (eventoAtualizado: Evento) => {
-    // Otimista
-    localSalvarEdicao(eventoAtualizado);
+  const handleSalvarEdicao = async (eventoEditado: any) => {
     try {
+      // Encontrar instituição selecionada pelo nome digitado
+      const instituicaoSelecionada = instituicoes.find(inst => inst.nome === eventoEditado.instituicao);
+
+      if (!instituicaoSelecionada) {
+        showError('Instituição não encontrada. Selecione uma instituição válida.');
+        return;
+      }
+
+      // Construir payload para API (usa idInstituicao e remove objeto instituicao)
+      const payload = {
+        idInstituicao: instituicaoSelecionada.uid,
+        data: eventoEditado.data,
+        horaInicio: eventoEditado.horaInicio,
+        horaFim: eventoEditado.horaFim
+      };
+
+      // Atualização otimista local (mantém objeto instituição para exibição)
+      const eventoLocalAtualizado: Evento = {
+        ...selectedEvento!,
+        ...payload,
+        instituicao: instituicaoSelecionada
+      };
+      localSalvarEdicao(eventoLocalAtualizado);
+
       if (updateEvento) {
-        await updateEvento(eventoAtualizado.id, eventoAtualizado);
+        const atualizadoRemoto = await updateEvento(eventoLocalAtualizado.id, payload);
+        // Garantir que lista mantenha objeto instituição
+        const eventoFinal = { ...atualizadoRemoto, instituicao: instituicaoSelecionada } as Evento;
+        setEventos(prev => prev.map(e => e.id === eventoFinal.id ? eventoFinal : e));
         showSuccess('Evento atualizado com sucesso!');
       }
     } catch (e: any) {
@@ -152,6 +178,24 @@ const Eventos: React.FC = () => {
     });
   }, [instituicoes]);
 
+  // Campos de edição com lista de instituições
+  const eventoEditFieldsWithOptions: EditField<Evento>[] = useMemo(() => {
+    return eventoEditFields.map(field => {
+      if (field.key === 'instituicao') {
+        return {
+          ...field,
+          type: 'autocomplete' as const,
+          dataListId: 'instituicoes-list-edit',
+          options: instituicoes.map(inst => ({
+            value: inst.nome,
+            label: inst.nome
+          }))
+        };
+      }
+      return field;
+    });
+  }, [instituicoes]);
+
   return (
     <div className="page-container">
       <PageHeader 
@@ -185,7 +229,7 @@ const Eventos: React.FC = () => {
         onClose={closeEditModal}
         onSave={handleSalvarEdicao}
         item={selectedEvento}
-        fields={eventoEditFields}
+        fields={eventoEditFieldsWithOptions}
         title="Editar Evento"
       />
 

@@ -55,7 +55,9 @@ export const EVENTO_COLUMNS: TableColumn<Evento>[] = [
     key: 'horaInicio', 
     label: 'Horário',
     render: (value: string, item: Evento) => {
-      return `${value} - ${item.horaFim}`;
+      const inicio = value ? value.substring(0,5) : '';
+      const fim = item.horaFim ? String(item.horaFim).substring(0,5) : '';
+      return `${inicio} - ${fim}`;
     }
   }
 ];
