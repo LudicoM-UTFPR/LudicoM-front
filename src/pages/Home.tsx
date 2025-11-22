@@ -14,10 +14,10 @@ const Home: React.FC = () => {
             const validatedData = emprestimosData
                 .filter((item) => !item.isDevolvido)
                 .map((item): Emprestimo => ({
-                    id: Number(item.id),
-                    idJogo: Number(item.idJogo),
-                    idParticipante: Number(item.idParticipante),
-                    idEvento: Number(item.idEvento),
+                    id: String(item.id),
+                    idJogo: String(item.idJogo),
+                    idParticipante: String(item.idParticipante),
+                    idEvento: String(item.idEvento),
                     // normaliza para HH:mm quando possível
                     horaEmprestimo: item.horaEmprestimo && String(item.horaEmprestimo).includes('T') ? (isoToHHMM(String(item.horaEmprestimo)) || '') : String(item.horaEmprestimo || ''),
                     horaDevolucao: item.horaDevolucao && String(item.horaDevolucao).includes('T') ? isoToHHMM(String(item.horaDevolucao)) : (item.horaDevolucao ? String(item.horaDevolucao) : null),
@@ -37,16 +37,16 @@ const Home: React.FC = () => {
         if (window.confirm(`${MESSAGES.CONFIRM_RETURN}\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}\nHorário: ${emprestimo.horario}`)) {
             const horaNow = formatTimeHHMM(new Date());
             // Marca localmente como devolvido (persistência mock)
-            markEmprestimoDevolvidoLocal(emprestimo.id, horaNow);
+            markEmprestimoDevolvidoLocal(String(emprestimo.id), horaNow);
             // Remove da visualização (marca como devolvido localmente)
-            setEmprestimos(prevEmprestimos => prevEmprestimos.filter(e => e.id !== emprestimo.id));
+            setEmprestimos(prevEmprestimos => prevEmprestimos.filter(e => String(e.id) !== String(emprestimo.id)));
             console.log('Empréstimo devolvido na Home:', emprestimo.id, 'hora:', horaNow);
         }
     }, []);
 
     const handleExcluir = useCallback((emprestimo: Emprestimo) => {
         if (window.confirm(`Tem certeza que deseja excluir o empréstimo?\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}`)) {
-            setEmprestimos(prev => prev.filter(e => e.id !== emprestimo.id));
+            setEmprestimos(prev => prev.filter(e => String(e.id) !== String(emprestimo.id)));
             console.log('Empréstimo excluído na Home:', emprestimo);
         }
     }, []);

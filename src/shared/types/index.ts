@@ -1,13 +1,20 @@
 // Tipos globais da aplicação
 
+export interface Instituicao {
+  uid: string; // UUID
+  nome: string;
+  endereco: string;
+}
+
 export interface Emprestimo {
-  id: number;
-  idJogo: number;
-  idParticipante: number;
-  idEvento: number;
+  id: string;
+  idJogo: string;
+  idParticipante: string;
+  idEvento: string;
   horaEmprestimo: string;
   horaDevolucao: string | null;
   isDevolvido: boolean;
+  observacoes?: string;
   // Campos computados para exibição (não persistidos)
   jogo?: string;
   participante?: string;
@@ -15,10 +22,12 @@ export interface Emprestimo {
 }
 
 export interface Evento {
-  id: number;
+  id: string;
   data: string;
-  instituicao: string;
-  horarioEvento: string;
+  idInstituicao?: string;
+  instituicao: Instituicao;
+  horaInicio: string;
+  horaFim: string;
 }
 
 export interface Jogo {
@@ -37,7 +46,7 @@ export interface Jogo {
 }
 
 export interface Participante {
-  id: number;
+  id: string;
   nome: string;
   email: string;
   documento: string;

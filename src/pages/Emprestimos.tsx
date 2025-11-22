@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '../components';
 import { emprestimoDetailFields, emprestimoEditFields, emprestimoCreateFields, MESSAGES, EMPRESTIMO_COLUMNS, EMPRESTIMO_DETAIL_COLUMNS } from '../shared/constants';
 import emprestimosData from '../shared/data/emprestimos.json';
-import { handleError, formatTimeHHMM, isoToHHMM, getDevolvidosLocal } from '../shared/utils';
+import { handleError, formatTimeHHMM, isoToHHMM, getDevolvidosLocal, generateId } from '../shared/utils';
 import type { Emprestimo, TableAction } from '../shared/types';
 
 const Emprestimos: React.FC = () => {
@@ -17,10 +17,10 @@ const Emprestimos: React.FC = () => {
     try {
       // Validação e carregamento dos dados
       const allValidatedData = emprestimosData.map((item): Emprestimo => ({
-        id: Number(item.id),
-        idJogo: Number(item.idJogo),
-        idParticipante: Number(item.idParticipante),
-        idEvento: Number(item.idEvento),
+        id: String(item.id),
+        idJogo: String(item.idJogo),
+        idParticipante: String(item.idParticipante),
+        idEvento: String(item.idEvento),
         // normaliza para HH:mm quando possível
         horaEmprestimo: item.horaEmprestimo && String(item.horaEmprestimo).includes('T') ? (isoToHHMM(String(item.horaEmprestimo)) || '') : String(item.horaEmprestimo || ''),
         horaDevolucao: item.horaDevolucao && String(item.horaDevolucao).includes('T') ? isoToHHMM(String(item.horaDevolucao)) : (item.horaDevolucao ? String(item.horaDevolucao) : null),
@@ -39,8 +39,8 @@ const Emprestimos: React.FC = () => {
 
     // itens devolvidos via UI local
     const historicoFromLocal = Object.keys(devolvidosMap).map(key => {
-      const id = Number(key);
-      const original = allValidatedData.find(a => a.id === id);
+      const id = String(key);
+      const original = allValidatedData.find(a => String(a.id) === id);
       if (!original) return null;
       return { ...original, isDevolvido: true, horaDevolucao: devolvidosMap[key] } as Emprestimo;
     }).filter(Boolean) as Emprestimo[];
@@ -61,7 +61,7 @@ const Emprestimos: React.FC = () => {
   const handleSalvarCriacao = (novoEmprestimo: any) => {
     const emprestimoComId = {
       ...novoEmprestimo,
-      id: Math.max(...emprestimosAtivos.map(e => e.id), ...historicoEmprestimos.map(e => e.id), 0) + 1,
+      id: generateId('emprestimo'),
       status: 'Ativo'
     };
     setEmprestimosAtivos([...emprestimosAtivos, emprestimoComId]);
@@ -71,7 +71,7 @@ const Emprestimos: React.FC = () => {
   // Handlers para empréstimos ativos
   const handleExcluirAtivo = useCallback((emprestimo: Emprestimo) => {
     if (window.confirm(`Tem certeza que deseja excluir o empréstimo?\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}`)) {
-      setEmprestimosAtivos(prevEmprestimos => prevEmprestimos.filter(e => e.id !== emprestimo.id));
+      setEmprestimosAtivos(prevEmprestimos => prevEmprestimos.filter(e => String(e.id) !== String(emprestimo.id)));
       console.log('Empréstimo ativo excluído:', emprestimo);
     }
   }, []);
@@ -82,7 +82,7 @@ const Emprestimos: React.FC = () => {
       const horaNow = formatTimeHHMM(new Date());
       const emprestimoDevolvido = { ...emprestimo, isDevolvido: true, horaDevolucao: horaNow };
 
-      setEmprestimosAtivos(prevAtivos => prevAtivos.filter(e => e.id !== emprestimo.id));
+      setEmprestimosAtivos(prevAtivos => prevAtivos.filter(e => String(e.id) !== String(emprestimo.id)));
       setHistoricoEmprestimos(prevHistorico => [...prevHistorico, emprestimoDevolvido]);
       
       console.log('Empréstimo devolvido:', emprestimo.id, 'em:', new Date().toISOString());
@@ -119,7 +119,7 @@ const Emprestimos: React.FC = () => {
 
   const handleExcluirHistorico = useCallback((emprestimo: Emprestimo) => {
     if (window.confirm(`Tem certeza que deseja excluir o empréstimo do histórico?\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}`)) {
-      setHistoricoEmprestimos(prevHistorico => prevHistorico.filter(e => e.id !== emprestimo.id));
+      setHistoricoEmprestimos(prevHistorico => prevHistorico.filter(e => String(e.id) !== String(emprestimo.id)));
       setIsModalOpen(false); // Fecha o modal após exclusão
       console.log('Empréstimo do histórico excluído:', emprestimo);
     }

@@ -80,6 +80,31 @@ export const formatTimeHHMM = (input?: Date | string | number): string => {
 };
 
 /**
+ * Garante formato HH:mm:ss para envio ao backend.
+ * Aceita entradas HH:mm, HH:mm:ss ou ISO; converte para HH:mm:ss.
+ */
+export const ensureHHMMSS = (time?: string | null): string => {
+    if (!time) return '';
+    const t = String(time).trim();
+    // Já está no formato esperado
+    if (/^\d{2}:\d{2}:\d{2}$/.test(t)) return t;
+    // HH:mm -> HH:mm:00
+    if (/^\d{2}:\d{2}$/.test(t)) return `${t}:00`;
+    // ISO ou outros formatos parseáveis
+    try {
+        const d = new Date(t);
+        if (!isNaN(d.getTime())) {
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            const ss = String(d.getSeconds()).padStart(2, '0');
+            return `${hh}:${mm}:${ss}`;
+        }
+    } catch {}
+    // Fallback: retorna como veio (evita quebrar fluxo)
+    return t;
+};
+
+/**
  * Converte uma string ISO (ou outro formato aceito pelo constructor Date) para HH:mm.
  * Retorna null quando não há valor válido.
  */
@@ -109,7 +134,7 @@ export const getDevolvidosLocal = (): Record<string, string> => {
     }
 };
 
-export const markEmprestimoDevolvidoLocal = (id: number, hora?: string) => {
+export const markEmprestimoDevolvidoLocal = (id: string | number, hora?: string) => {
     try {
         const map = getDevolvidosLocal();
         map[String(id)] = hora || formatTimeHHMM(new Date());
@@ -157,7 +182,7 @@ export const handleError = (error: unknown, context: string = 'Unknown'): void =
  */
 export const validateEntityData = <T extends Record<string, any>>(
     rawData: any[],
-    entitySchema: Record<keyof T, 'number' | 'string' | 'boolean' | 'date'>
+    entitySchema: Record<keyof T, 'number' | 'string' | 'boolean' | 'date' | 'object'>
 ): T[] => {
     return rawData.map((item): T => {
         const validatedItem: Partial<T> = {};
@@ -166,9 +191,11 @@ export const validateEntityData = <T extends Record<string, any>>(
             const value = item[key];
             
             switch (type) {
-                case 'number':
-                    validatedItem[key as keyof T] = Number(value || 0) as T[keyof T];
+                case 'number': {
+                    const n = Number(value);
+                    validatedItem[key as keyof T] = (Number.isNaN(n) ? 0 : n) as T[keyof T];
                     break;
+                }
                 case 'string':
                     validatedItem[key as keyof T] = String(value || "") as T[keyof T];
                     break;
@@ -177,6 +204,10 @@ export const validateEntityData = <T extends Record<string, any>>(
                     break;
                 case 'date':
                     validatedItem[key as keyof T] = String(value || "") as T[keyof T];
+                    break;
+                case 'object':
+                    // Mantém o objeto (ou quebra para objeto vazio se inválido)
+                    validatedItem[key as keyof T] = (typeof value === 'object' && value !== null ? value : {}) as T[keyof T];
                     break;
                 default:
                     validatedItem[key as keyof T] = value as T[keyof T];
@@ -203,24 +234,31 @@ export const ENTITY_SCHEMAS = {
         criadoQuando: 'string' as const,
         atualizadoQuando: 'string' as const
     },
+    instituicao: {
+        uid: 'string' as const,
+        nome: 'string' as const,
+        endereco: 'string' as const
+    },
     participante: {
-        id: 'number' as const,
+        id: 'string' as const,
         nome: 'string' as const,
         email: 'string' as const,
         documento: 'string' as const,
         ra: 'string' as const
     },
     evento: {
-        id: 'number' as const,
-        nome: 'string' as const,
+        id: 'string' as const,
         data: 'string' as const,
-        horario: 'string' as const
+        idInstituicao: 'string' as const,
+        instituicao: 'object' as const,
+        horaInicio: 'string' as const,
+        horaFim: 'string' as const
     },
     emprestimo: {
-        id: 'number' as const,
-        idJogo: 'number' as const,
-        idParticipante: 'number' as const,
-        idEvento: 'number' as const,
+        id: 'string' as const,
+        idJogo: 'string' as const,
+        idParticipante: 'string' as const,
+        idEvento: 'string' as const,
         horaEmprestimo: 'string' as const,
         horaDevolucao: 'string' as const,
         isDevolvido: 'boolean' as const,

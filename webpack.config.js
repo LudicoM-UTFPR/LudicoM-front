@@ -64,7 +64,18 @@ module.exports = {
             ],
         }),
         new webpack.DefinePlugin({
-            "process.env": JSON.stringify(process.env),
+            "process.env.REACT_APP_API_BASE_URL": JSON.stringify(
+                process.env.REACT_APP_API_BASE_URL || ""
+            ),
+            "process.env.REACT_APP_AUTH_USERNAME": JSON.stringify(
+                process.env.REACT_APP_AUTH_USERNAME || ""
+            ),
+            "process.env.REACT_APP_AUTH_PASSWORD": JSON.stringify(
+                process.env.REACT_APP_AUTH_PASSWORD || ""
+            ),
+            "process.env.NODE_ENV": JSON.stringify(
+                process.env.NODE_ENV || "development"
+            ),
         }),
     ],
     resolve: {
