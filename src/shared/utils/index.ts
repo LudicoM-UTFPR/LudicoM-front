@@ -203,6 +203,11 @@ export const ENTITY_SCHEMAS = {
         criadoQuando: 'string' as const,
         atualizadoQuando: 'string' as const
     },
+    instituicao: {
+        uid: 'string' as const,
+        nome: 'string' as const,
+        endereco: 'string' as const
+    },
     participante: {
         id: 'number' as const,
         nome: 'string' as const,
@@ -211,10 +216,12 @@ export const ENTITY_SCHEMAS = {
         ra: 'string' as const
     },
     evento: {
-        id: 'number' as const,
-        nome: 'string' as const,
+        id: 'string' as const,
         data: 'string' as const,
-        horario: 'string' as const
+        idInstituicao: 'string' as const,
+        instituicao: 'instituicao' as const,
+        horaInicio: 'string' as const,
+        horaFim: 'string' as const
     },
     emprestimo: {
         id: 'number' as const,

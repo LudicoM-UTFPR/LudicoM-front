@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { Autocomplete } from '../common';
 
 export interface CreateField<T> {
   key: keyof T;
   label: string;
-  type: 'text' | 'email' | 'number' | 'date' | 'boolean' | 'select';
+  type: 'text' | 'email' | 'number' | 'date' | 'time' | 'boolean' | 'select' | 'autocomplete';
   required?: boolean;
   placeholder?: string;
   defaultValue?: any;
   options?: { value: string | number | boolean; label: string }[];
   validation?: (value: any) => string | null;
+  dataListId?: string; // Para autocomplete
 }
 
 export interface CreateModalProps<T> {
@@ -144,6 +146,17 @@ export function CreateModal<T extends { id: number | string }>({
           </select>
         );
 
+      case 'autocomplete':
+        return (
+          <Autocomplete
+            value={String(value || '')}
+            onChange={(newValue) => handleInputChange(field.key, newValue)}
+            options={field.options || []}
+            placeholder={field.placeholder}
+            className={`field-input ${error ? 'error' : ''}`}
+          />
+        );
+
       case 'number':
         return (
           <input
@@ -161,6 +174,16 @@ export function CreateModal<T extends { id: number | string }>({
             type="date"
             className={`field-input ${error ? 'error' : ''}`}
             value={value ? String(value).split('T')[0] : ''}
+            onChange={(e) => handleInputChange(field.key, e.target.value)}
+          />
+        );
+
+      case 'time':
+        return (
+          <input
+            type="time"
+            className={`field-input ${error ? 'error' : ''}`}
+            value={value ? String(value).substring(0, 5) : ''}
             onChange={(e) => handleInputChange(field.key, e.target.value)}
           />
         );
