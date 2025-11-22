@@ -54,6 +54,7 @@ export const participanteDetailFields: DetailField<Participante>[] = [
 
 // Configuração de campos para Eventos
 export const eventoDetailFields: DetailField<Evento>[] = [
+  { key: 'id', label: 'ID', type: 'number' },
   { 
     key: 'data', 
     label: 'Data do Evento', 
@@ -77,38 +78,10 @@ export const eventoDetailFields: DetailField<Evento>[] = [
       }
     }
   },
-  { key: 'instituicao', label: 'Instituição', type: 'custom',
-    render: (value) => {
-      if (!value) return 'Instituição não informada';
-      if (typeof value === 'string') return value;
-      return (value as any).nome || 'Instituição não informada';
-    }
-  },
+  { key: 'instituicao', label: 'Instituição', type: 'text' },
   { 
-    key: 'horaInicio', 
-    label: 'Horário de Início', 
-    type: 'custom',
-    render: (value) => {
-      const timeStr = value as string;
-      // Se já está no formato HH:mm, retorna diretamente
-      if (timeStr && timeStr.includes(':') && timeStr.length <= 5) {
-        return timeStr;
-      }
-      // Caso contrário, tenta converter de ISO para HH:mm
-      try {
-        const date = new Date(timeStr);
-        return date.toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      } catch {
-        return timeStr || 'Horário inválido';
-      }
-    }
-  },
-  { 
-    key: 'horaFim', 
-    label: 'Horário de Término', 
+    key: 'horarioEvento', 
+    label: 'Horário do Evento', 
     type: 'custom',
     render: (value) => {
       const timeStr = value as string;

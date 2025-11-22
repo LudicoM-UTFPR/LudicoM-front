@@ -1,5 +1,5 @@
 import React from 'react';
-import type { TableColumn, Jogo, Participante, Evento, Emprestimo, Instituicao } from '../types';
+import type { TableColumn, Jogo, Participante, Evento, Emprestimo } from '../types';
 
 /**
  * Definições centralizadas de colunas para tabelas
@@ -42,24 +42,8 @@ export const PARTICIPANTE_COLUMNS: TableColumn<Participante>[] = [
 // Colunas para Eventos
 export const EVENTO_COLUMNS: TableColumn<Evento>[] = [
   { key: 'data', label: 'Data' },
-  {
-    key: 'instituicao',
-    label: 'Instituição',
-    render: (value: Instituicao, item: Evento) => (
-      <span>
-        {value.nome}
-      </span>
-    )
-  },
-  { 
-    key: 'horaInicio', 
-    label: 'Horário',
-    render: (value: string, item: Evento) => {
-      const inicio = value ? value.substring(0,5) : '';
-      const fim = item.horaFim ? String(item.horaFim).substring(0,5) : '';
-      return `${inicio} - ${fim}`;
-    }
-  }
+  { key: 'instituicao', label: 'Instituição' },
+  { key: 'horarioEvento', label: 'Horário' }
 ];
 
 // Colunas para Empréstimos - Lista geral

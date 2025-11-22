@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { handleError, generateId } from '../utils';
 import { validateEntityData, ENTITY_SCHEMAS } from '../utils';
 import { fetchJogos, createJogo, updateJogo, deleteJogo } from '../services/jogosService';
-import { fetchEventos, createEvento, updateEvento, deleteEvento } from '../services/eventosService';
-import type { Participante, Emprestimo, Jogo, Evento } from '../types';
+import type { Participante, Emprestimo, Jogo } from '../types';
 
 /**
  * Hook reutilizável para gerenciar dados de entidades específicas
@@ -200,85 +199,6 @@ export function useJogos() {
     createJogo: createRemoteJogo,
     updateJogo: updateRemoteJogo,
     deleteJogo: deleteRemoteJogo
-  };
-}
-
-// Hook para eventos (similar ao de jogos, porém sem caching avançado inicialmente)
-export function useEventos() {
-  const [eventos, setEventos] = useState<Evento[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    const controller = new AbortController();
-
-    (async () => {
-      try {
-        setLoading(true);
-        const fetched = await fetchEventos(controller.signal);
-        const validated = validateEntityData<Evento>(fetched as any, ENTITY_SCHEMAS.evento as any);
-        if (isMounted) {
-          setEventos(validated);
-          setError(null);
-        }
-      } catch (e) {
-        if ((e as any)?.name === 'AbortError') return;
-        handleError(e, 'useEventos - fetch');
-        if (isMounted) setError('Erro ao carregar eventos');
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, []);
-
-  async function createRemoteEvento(novo: Partial<Evento>): Promise<Evento> {
-    try { 
-      const saved = await createEvento(novo);
-      setEventos(prev => [...prev, saved]);
-      return saved;
-    } catch (e) {
-      // fallback local
-      const localId = Math.max(...eventos.map(ev => ev.id), 0) + 1;
-      const localItem = { ...novo, id: localId } as Evento;
-      setEventos(prev => [...prev, localItem]);
-      throw e;
-    }
-  }
-
-  async function updateRemoteEvento(id: number | string, changes: Partial<Evento>): Promise<Evento> {
-    try {
-      const saved = await updateEvento(id, changes);
-      setEventos(prev => prev.map(ev => (ev.id === saved.id ? saved : ev)));
-      return saved;
-    } catch (e) {
-      handleError(e, 'useEventos - update');
-      throw e;
-    }
-  }
-
-  async function deleteRemoteEvento(id: number | string): Promise<void> {
-    try {
-      await deleteEvento(id);
-      setEventos(prev => prev.filter(ev => ev.id !== Number(id)));
-    } catch (e) {
-      handleError(e, 'useEventos - delete');
-      throw e;
-    }
-  }
-
-  return {
-    eventos,
-    loading,
-    error,
-    createEvento: createRemoteEvento,
-    updateEvento: updateRemoteEvento,
-    deleteEvento: deleteRemoteEvento
   };
 }
 

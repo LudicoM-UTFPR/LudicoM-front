@@ -156,34 +156,23 @@ export const eventoEditFields: EditField<Evento>[] = [
   { 
     key: 'instituicao', 
     label: 'Instituição', 
-    type: 'autocomplete', 
+    type: 'text', 
     required: true,
-    placeholder: 'Digite para buscar instituição...',
-    dataListId: 'instituicoes-list-edit',
+    placeholder: 'Nome da instituição...',
     validation: (value: string) => {
-      if (!value || value.length < 2) return 'Selecione uma instituição';
+      if (value.length < 2) return 'Instituição deve ter pelo menos 2 caracteres';
+      if (value.length > 100) return 'Instituição deve ter no máximo 100 caracteres';
       return null;
     }
   },
   { 
-    key: 'horaInicio', 
-    label: 'Horário de Início do Evento', 
-    type: 'time', 
+    key: 'horarioEvento', 
+    label: 'Horário do Evento', 
+    type: 'text', 
     required: true,
-    placeholder: '14:00',
+    placeholder: '14:30',
     validation: (value: string) => {
-      if (!value) return 'Horário de início é obrigatório';
-      return null;
-    }
-  },
-  { 
-    key: 'horaFim', 
-    label: 'Horário de Término do Evento', 
-    type: 'time', 
-    required: true,
-    placeholder: '18:00',
-    validation: (value: string) => {
-      if (!value) return 'Horário de término é obrigatório';
+      if (!ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
       return null;
     }
   }
