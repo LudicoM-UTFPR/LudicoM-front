@@ -140,7 +140,8 @@ const Eventos: React.FC = () => {
       if (field.key === 'instituicao') {
         return {
           ...field,
-          type: 'select' as const,
+          type: 'autocomplete' as const,
+          dataListId: 'instituicoes-list',
           options: instituicoes.map(inst => ({
             value: inst.nome,
             label: inst.nome

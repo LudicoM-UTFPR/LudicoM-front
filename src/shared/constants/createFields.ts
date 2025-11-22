@@ -163,9 +163,10 @@ export const eventoCreateFields: CreateField<Evento>[] = [
   { 
     key: 'instituicao', 
     label: 'Instituição', 
-    type: 'text', 
+    type: 'autocomplete', 
     required: true,
     placeholder: 'Digite para buscar instituição...',
+    dataListId: 'instituicoes-list',
     validation: (value: string) => {
       if (!value || value.length < 2) return 'Selecione uma instituição';
       return null;

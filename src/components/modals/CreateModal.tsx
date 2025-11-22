@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Autocomplete } from '../common';
 
 export interface CreateField<T> {
   key: keyof T;
@@ -147,21 +148,13 @@ export function CreateModal<T extends { id: number | string }>({
 
       case 'autocomplete':
         return (
-          <>
-            <input
-              type="text"
-              className={`field-input ${error ? 'error' : ''}`}
-              value={String(value || '')}
-              placeholder={field.placeholder}
-              list={field.dataListId}
-              onChange={(e) => handleInputChange(field.key, e.target.value)}
-            />
-            <datalist id={field.dataListId}>
-              {field.options?.map((option) => (
-                <option key={String(option.value)} value={String(option.label)} />
-              ))}
-            </datalist>
-          </>
+          <Autocomplete
+            value={String(value || '')}
+            onChange={(newValue) => handleInputChange(field.key, newValue)}
+            options={field.options || []}
+            placeholder={field.placeholder}
+            className={`field-input ${error ? 'error' : ''}`}
+          />
         );
 
       case 'number':
