@@ -244,7 +244,9 @@ export const ENTITY_SCHEMAS = {
         nome: 'string' as const,
         email: 'string' as const,
         documento: 'string' as const,
-        ra: 'string' as const
+        ra: 'string' as const,
+        idInstituicao: 'string' as const,
+        instituicao: 'object' as const
     },
     evento: {
         id: 'string' as const,

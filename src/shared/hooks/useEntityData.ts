@@ -3,7 +3,9 @@ import { handleError, generateId } from '../utils';
 import { validateEntityData, ENTITY_SCHEMAS } from '../utils';
 import { fetchJogos, createJogo, updateJogo, deleteJogo } from '../services/jogosService';
 import { fetchEventos, createEvento, updateEvento, deleteEvento } from '../services/eventosService';
-import type { Participante, Emprestimo, Jogo, Evento } from '../types';
+import { fetchInstituicoes, createInstituicao, updateInstituicao, deleteInstituicao } from '../services/instituicaoService';
+import type { Participante, Emprestimo, Jogo, Evento, Instituicao } from '../types';
+import { fetchParticipantes, createParticipante, updateParticipante, deleteParticipante } from '../services/participanteService';
 
 /**
  * Hook reutilizável para gerenciar dados de entidades específicas
@@ -17,52 +19,74 @@ export function useParticipantes() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadParticipantes = async () => {
+    let isMounted = true;
+    const controller = new AbortController();
+
+    (async () => {
       try {
         setLoading(true);
-        // Import dinâmico para evitar carregamento desnecessário
-        const participantesData = await import('../data/participantes.json');
-        const validatedData = validateEntityData<Participante>(participantesData.default, ENTITY_SCHEMAS.participante);
-        setParticipantes(validatedData);
-        setError(null);
-      } catch (error) {
-        const errorMessage = 'Erro ao carregar participantes';
-        handleError(error, "useParticipantes - Data Loading");
-        setError(errorMessage);
+        const fetched = await fetchParticipantes(controller.signal);
+        const validated = validateEntityData<Participante>(fetched as any, ENTITY_SCHEMAS.participante as any);
+        if (isMounted) {
+          setParticipantes(validated);
+          setError(null);
+        }
+      } catch (e) {
+        if ((e as any)?.name === 'AbortError') return;
+        handleError(e, 'useParticipantes - fetch');
+        if (isMounted) setError('Erro ao carregar participantes');
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
+    })();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
     };
-
-    loadParticipantes();
   }, []);
 
-  const createParticipante = useCallback((novoParticipante: Omit<Participante, 'id'>) => {
-    const participanteComId = {
-      ...novoParticipante,
-      id: generateId('participante')
-    } as Participante;
-    setParticipantes(prev => [...prev, participanteComId]);
-    return participanteComId;
-  }, []);
+  async function createRemoteParticipante(novo: Partial<Participante>): Promise<Participante> {
+    try {
+      const saved = await createParticipante(novo);
+      setParticipantes(prev => [...prev, saved]);
+      return saved;
+    } catch (e) {
+      const localId = generateId('participante');
+      const localItem = { ...novo, id: localId } as Participante;
+      setParticipantes(prev => [...prev, localItem]);
+      throw e;
+    }
+  }
 
-  const updateParticipante = useCallback((participanteAtualizado: Participante) => {
-    setParticipantes(prev => 
-      prev.map(p => p.id === participanteAtualizado.id ? participanteAtualizado : p)
-    );
-  }, []);
+  async function updateRemoteParticipante(id: string, changes: Partial<Participante>): Promise<Participante> {
+    try {
+      const saved = await updateParticipante(id, changes);
+      setParticipantes(prev => prev.map(p => String(p.id) === String(saved.id) ? saved : p));
+      return saved;
+    } catch (e) {
+      handleError(e, 'useParticipantes - update');
+      throw e;
+    }
+  }
 
-  const deleteParticipante = useCallback((id: string) => {
-    setParticipantes(prev => prev.filter(p => String(p.id) !== String(id)));
-  }, []);
+  async function deleteRemoteParticipante(id: string): Promise<void> {
+    try {
+      await deleteParticipante(id);
+      setParticipantes(prev => prev.filter(p => String(p.id) !== String(id)));
+    } catch (e) {
+      handleError(e, 'useParticipantes - delete');
+      throw e;
+    }
+  }
 
   return {
     participantes,
     loading,
     error,
-    createParticipante,
-    updateParticipante,
-    deleteParticipante
+    createParticipante: createRemoteParticipante,
+    updateParticipante: updateRemoteParticipante,
+    deleteParticipante: deleteRemoteParticipante
   };
 }
 
@@ -352,5 +376,65 @@ export function useEmprestimos() {
     loading,
     error,
     createEmprestimo
+  };
+}
+
+// Hook para instituições (padrão similar a eventos, sem caching avançado)
+export function useInstituicoes() {
+  const [instituicoes, setInstituicoes] = useState<Instituicao[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await fetchInstituicoes(controller.signal);
+        if (isMounted) {
+          setInstituicoes(data);
+          setError(null);
+        }
+      } catch (e) {
+        if ((e as any)?.name === 'AbortError') return;
+        handleError(e, 'useInstituicoes - fetch');
+        if (isMounted) setError('Erro ao carregar instituições');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, []);
+
+  async function createRemoteInstituicao(novo: Partial<Instituicao>): Promise<Instituicao> {
+    const saved = await createInstituicao(novo);
+    setInstituicoes(prev => [...prev, saved]);
+    return saved;
+  }
+
+  async function updateRemoteInstituicao(id: string, changes: Partial<Instituicao>): Promise<Instituicao> {
+    const saved = await updateInstituicao(id, changes);
+    setInstituicoes(prev => prev.map(i => i.uid === saved.uid ? saved : i));
+    return saved;
+  }
+
+  async function deleteRemoteInstituicao(id: string): Promise<void> {
+    await deleteInstituicao(id);
+    setInstituicoes(prev => prev.filter(i => i.uid !== id));
+  }
+
+  return {
+    instituicoes,
+    loading,
+    error,
+    createInstituicao: createRemoteInstituicao,
+    updateInstituicao: updateRemoteInstituicao,
+    deleteInstituicao: deleteRemoteInstituicao
   };
 }

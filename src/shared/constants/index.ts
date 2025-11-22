@@ -3,6 +3,7 @@ import type { RouteKey, UIConstants, AppMessages } from '../types';
 // Constantes de navegação com tipagem forte
 export const ROUTES = {
     HOME: "/",
+    INSTITUICOES: "/instituicoes",
     EVENTOS: "/eventos",
     JOGOS: "/jogos",
     PARTICIPANTES: "/participantes",

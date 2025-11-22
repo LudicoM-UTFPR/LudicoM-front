@@ -1,5 +1,5 @@
 import { DetailField } from '../../components/modals/DetailModal';
-import { Jogo, Participante, Evento, Emprestimo } from '../types';
+import { Jogo, Participante, Evento, Emprestimo, Instituicao } from '../types';
 
 // Configuração de campos para Jogos
 export const jogoDetailFields: DetailField<Jogo>[] = [
@@ -183,4 +183,11 @@ export const emprestimoDetailFields: DetailField<Emprestimo>[] = [
     label: 'Horário (Formatado)', 
     type: 'text'
   }
+];
+
+// Configuração de campos para Instituições
+export const instituicaoDetailFields: DetailField<Instituicao>[] = [
+  { key: 'uid', label: 'ID', type: 'text' },
+  { key: 'nome', label: 'Nome', type: 'text' },
+  { key: 'endereco', label: 'Endereço', type: 'text' }
 ];

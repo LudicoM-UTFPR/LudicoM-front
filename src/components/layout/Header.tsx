@@ -32,12 +32,12 @@ const Header: React.FC = () => {
                         Home
                     </Link>
                     <Link
-                        to={ROUTES.EVENTOS}
+                        to={ROUTES.EMPRESTIMOS}
                         className={`nav-item ${
-                            isActive(ROUTES.EVENTOS) ? "active" : ""
+                            isActive(ROUTES.EMPRESTIMOS) ? "active" : ""
                         }`}
                     >
-                        Eventos
+                        Empréstimos
                     </Link>
                     <Link
                         to={ROUTES.JOGOS}
@@ -48,20 +48,28 @@ const Header: React.FC = () => {
                         Jogos
                     </Link>
                     <Link
+                        to={ROUTES.INSTITUICOES}
+                        className={`nav-item ${
+                            isActive(ROUTES.INSTITUICOES) ? "active" : ""
+                        }`}
+                    >
+                        Instituição
+                    </Link>
+                    <Link
+                        to={ROUTES.EVENTOS}
+                        className={`nav-item ${
+                            isActive(ROUTES.EVENTOS) ? "active" : ""
+                        }`}
+                    >
+                        Evento
+                    </Link>
+                    <Link
                         to={ROUTES.PARTICIPANTES}
                         className={`nav-item ${
                             isActive(ROUTES.PARTICIPANTES) ? "active" : ""
                         }`}
                     >
                         Participantes
-                    </Link>
-                    <Link
-                        to={ROUTES.EMPRESTIMOS}
-                        className={`nav-item ${
-                            isActive(ROUTES.EMPRESTIMOS) ? "active" : ""
-                        }`}
-                    >
-                        Empréstimos
                     </Link>
                 </nav>
 
