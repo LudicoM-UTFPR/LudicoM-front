@@ -28,6 +28,8 @@ export async function fetchEventos(signal?: AbortSignal): Promise<Evento[]> {
         ...item,
         id: String(item.uid),
         uid: item.uid,
+        horaInicio: String(item.horaInicio).substring(0, 5),
+        horaFim: String(item.horaFim).substring(0, 5),
       }));
     }
     const validated: Evento[] = validateEntityData<Evento>(

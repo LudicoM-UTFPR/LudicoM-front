@@ -54,7 +54,6 @@ export const participanteDetailFields: DetailField<Participante>[] = [
 
 // Configuração de campos para Eventos
 export const eventoDetailFields: DetailField<Evento>[] = [
-  { key: 'id', label: 'ID', type: 'number' },
   { 
     key: 'data', 
     label: 'Data do Evento', 
@@ -78,7 +77,13 @@ export const eventoDetailFields: DetailField<Evento>[] = [
       }
     }
   },
-  { key: 'instituicao', label: 'Instituição', type: 'text' },
+  { key: 'instituicao', label: 'Instituição', type: 'custom',
+    render: (value) => {
+      if (!value) return 'Instituição não informada';
+      if (typeof value === 'string') return value;
+      return (value as any).nome || 'Instituição não informada';
+    }
+  },
   { 
     key: 'horaInicio', 
     label: 'Horário de Início', 

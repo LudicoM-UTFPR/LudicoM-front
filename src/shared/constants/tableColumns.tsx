@@ -55,8 +55,7 @@ export const EVENTO_COLUMNS: TableColumn<Evento>[] = [
     key: 'horaInicio', 
     label: 'Horário',
     render: (value: string, item: Evento) => {
-      const formatarHora = (hora: string) => hora.substring(0, 5); // Pega apenas HH:mm
-      return `${formatarHora(value)} - ${formatarHora(item.horaFim)}`;
+      return `${value} - ${item.horaFim}`;
     }
   }
 ];
