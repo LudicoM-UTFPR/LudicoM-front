@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '../components';
 import { ConfirmModal } from '../components/modals/ConfirmModal';
-import { useCrudOperations, useInstituicoes as useInstituicoesHook } from '../shared/hooks';
+import { useCrudOperations, useInstituicoes as useInstituicoesHook, useEventos } from '../shared/hooks';
 import { instituicaoDetailFields, instituicaoEditFields, instituicaoCreateFields, INSTITUICAO_COLUMNS } from '../shared/constants';
 import type { Instituicao, TableAction } from '../shared/types';
 import { useToast } from '../components/common';
@@ -10,6 +10,7 @@ type InstituicaoUI = Instituicao & { id: string };
 
 const Instituicoes: React.FC = () => {
   const { instituicoes: remoteInstituicoes, loading, error, createInstituicao, updateInstituicao, deleteInstituicao } = useInstituicoesHook();
+  const { eventos } = useEventos();
   const [instituicoes, setInstituicoes] = useState<InstituicaoUI[]>([]);
   const { showError, showErrorList, showSuccess, showWarning } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -44,13 +45,21 @@ const Instituicoes: React.FC = () => {
 
   const confirmExcluir = async () => {
     if (!toDelete) return;
+    // Pré-validação local: impedir exclusão se houver eventos vinculados
+    const vinculados = eventos.filter(ev => ev.idInstituicao === toDelete.uid || ev.instituicao?.uid === toDelete.uid);
+    if (vinculados.length > 0) {
+      showWarning(`Não é possível excluir: vinculada a ${vinculados.length} evento(s).`);
+      setConfirmOpen(false);
+      setToDelete(null);
+      return;
+    }
     try {
       await deleteInstituicao(toDelete.uid);
       setInstituicoes(prev => prev.filter(i => i.id !== toDelete.id));
       showSuccess('Instituição excluída com sucesso!');
     } catch (e: any) {
       if (e?.status === 409) {
-        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito: não é possível excluir instituição.');
+        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito: instituição vinculada a eventos.');
       } else if (e?.errors) {
         showErrorList(e.errors);
       } else {
