@@ -1,0 +1,37 @@
+.footer {
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  margin-top: auto;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.footer-content {
+  padding: 2rem 0;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.footer-content p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.footer-content p:first-child {
+  font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .footer-content {
+    padding: 1.5rem 0;
+  }
+
+  .footer-content p {
+    font-size: 0.8rem;
+  }
+}
