@@ -1,14 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '../components';
+import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { useCrudOperations, useInstituicoes as useInstituicoesHook } from '../shared/hooks';
 import { instituicaoDetailFields, instituicaoEditFields, instituicaoCreateFields, INSTITUICAO_COLUMNS } from '../shared/constants';
 import type { Instituicao, TableAction } from '../shared/types';
+import { useToast } from '../components/common';
 
 type InstituicaoUI = Instituicao & { id: string };
 
 const Instituicoes: React.FC = () => {
   const { instituicoes: remoteInstituicoes, loading, error, createInstituicao, updateInstituicao, deleteInstituicao } = useInstituicoesHook();
   const [instituicoes, setInstituicoes] = useState<InstituicaoUI[]>([]);
+  const { showError, showErrorList, showSuccess, showWarning } = useToast();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<InstituicaoUI | null>(null);
 
   const {
     selectedItem: selected,
@@ -32,44 +37,95 @@ const Instituicoes: React.FC = () => {
     }
   }, [remoteInstituicoes]);
 
-  const handleExcluir = async (item: InstituicaoUI) => {
-    if (!window.confirm(`Excluir a instituição "${item.nome}"?`)) return;
+  const askExcluir = (item: InstituicaoUI) => {
+    setToDelete(item);
+    setConfirmOpen(true);
+  };
+
+  const confirmExcluir = async () => {
+    if (!toDelete) return;
     try {
-      await deleteInstituicao(item.uid);
-      setInstituicoes(prev => prev.filter(i => i.id !== item.id));
-    } catch (e) {
-      // fallback local
-      setInstituicoes(prev => prev.filter(i => i.id !== item.id));
+      await deleteInstituicao(toDelete.uid);
+      setInstituicoes(prev => prev.filter(i => i.id !== toDelete.id));
+      showSuccess('Instituição excluída com sucesso!');
+    } catch (e: any) {
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito: não é possível excluir instituição.');
+      } else if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao excluir instituição.');
+      }
+    } finally {
+      setConfirmOpen(false);
+      setToDelete(null);
     }
   };
 
   const localSalvarEdicao = createHandleSalvarEdicao(instituicoes, setInstituicoes);
   const handleSalvarEdicao = async (edited: Partial<InstituicaoUI>) => {
     if (!selected) return;
+    // unicidade local por nome (caso o backend também valide, evitamos ida desnecessária)
+    const errors: Record<string,string> = {};
+    if (edited.nome && instituicoes.some(i => i.nome === edited.nome && i.id !== selected.id)) {
+      errors.nome = 'Nome de instituição já cadastrado.';
+    }
+    if (Object.keys(errors).length) {
+      showErrorList(errors);
+      return;
+    }
     const payload = { nome: edited.nome, endereco: edited.endereco } as Partial<Instituicao>;
-    // otimista
-    localSalvarEdicao({ ...selected, ...payload } as InstituicaoUI);
     try {
       const saved = await updateInstituicao(selected.uid, payload);
       setInstituicoes(prev => prev.map(i => i.id === selected.id ? { ...saved, id: saved.uid } : i));
-    } catch {}
+      showSuccess('Instituição atualizada com sucesso!');
+    } catch (e: any) {
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito ao atualizar instituição.');
+      } else if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao atualizar instituição.');
+      }
+    }
   };
 
   const localSalvarCriacao = createHandleSalvarCriacao(instituicoes, setInstituicoes);
   const handleSalvarCriacao = async (novo: Partial<Instituicao>) => {
+    // unicidade local por nome
+    const errors: Record<string,string> = {};
+    if (novo.nome && instituicoes.some(i => i.nome === novo.nome)) {
+      errors.nome = 'Nome de instituição já cadastrado.';
+    }
+    if (Object.keys(errors).length) {
+      showErrorList(errors);
+      return;
+    }
     try {
-      const saved = await createInstituicao({ nome: novo.nome || '', endereco: novo.endereco || '' });
-      setInstituicoes(prev => [...prev, { ...saved, id: saved.uid }]);
-    } catch (e) {
-      // fallback local (gera id via factory)
-      localSalvarCriacao(novo);
+      if (createInstituicao) {
+        const saved = await createInstituicao({ nome: novo.nome || '', endereco: novo.endereco || '' });
+        setInstituicoes(prev => [...prev, { ...saved, id: saved.uid }]);
+        showSuccess('Instituição criada com sucesso!');
+      } else {
+        // modo offline
+        localSalvarCriacao(novo);
+        showSuccess('Instituição criada localmente (modo offline).');
+      }
+    } catch (e: any) {
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito ao criar instituição.');
+      } else if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao criar instituição.');
+      }
     }
   };
 
   const actions: TableAction<InstituicaoUI>[] = useMemo(() => ([
     { label: 'Detalhes', onClick: handleDetalhes, variant: 'primary' },
     { label: 'Editar', onClick: handleEditar, variant: 'secondary' },
-    { label: 'Excluir', onClick: handleExcluir, variant: 'danger' }
+    { label: 'Excluir', onClick: askExcluir, variant: 'danger' }
   ]), [instituicoes]);
 
   return (
@@ -99,7 +155,7 @@ const Instituicoes: React.FC = () => {
         fields={instituicaoDetailFields as any}
         title="Detalhes da Instituição"
         onEdit={handleEditar}
-        onDelete={handleExcluir}
+        onDelete={askExcluir}
       />
 
       <EditModal<InstituicaoUI>
@@ -117,6 +173,23 @@ const Instituicoes: React.FC = () => {
         onSave={handleSalvarCriacao as any}
         fields={instituicaoCreateFields as any}
         title="Criar Nova Instituição"
+      />
+      <ConfirmModal
+        isOpen={confirmOpen}
+        title="Excluir Instituição"
+        message={
+          toDelete ? (
+            <>
+              Tem certeza que deseja excluir a instituição?<br />
+              <strong>Nome:</strong> {toDelete.nome}
+            </>
+          ) : 'Tem certeza que deseja excluir a instituição?'
+        }
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={confirmExcluir}
+        onCancel={() => { setConfirmOpen(false); setToDelete(null); }}
       />
     </div>
   );

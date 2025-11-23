@@ -4,6 +4,45 @@ import { validateEntityData, ENTITY_SCHEMAS } from '../utils';
 import { handleError } from '../utils';
 import { getAuthHeaders } from './authService';
 
+// Utilitário para extrair mensagens detalhadas de erro do backend (JSON ou texto)
+async function extractError(res: Response): Promise<Error> {
+    let base = `HTTP ${res.status} - ${res.statusText}`;
+    try {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            const body = await res.json();
+            // Convenções possíveis: { message: string, errors: Record<string,string>|string[] }
+            if (body) {
+                if (body.message && typeof body.message === 'string') {
+                    base = body.message;
+                }
+                // Anexa erros estruturados (campo -> mensagem) se existirem
+                const err: any = new Error(base);
+                err.status = res.status;
+                if (body.errors && typeof body.errors === 'object') {
+                    (err as any).errors = body.errors;
+                } else if (Array.isArray(body.errors)) {
+                    // Converte array simples em objeto indexado
+                    const mapped: Record<string,string> = {};
+                    body.errors.forEach((msg: string, idx: number) => { mapped[`error_${idx}`] = msg; });
+                    err.errors = mapped;
+                }
+                return err;
+            }
+        } else {
+            const text = await res.text();
+            if (text) {
+                base = text.length < 500 ? text : base; // evita anexar texto gigante
+            }
+        }
+    } catch {
+        // Ignora falhas de parsing e usa base genérica
+    }
+    const generic: any = new Error(base);
+    generic.status = res.status;
+    return generic;
+}
+
 function normalizeJogoRecord(item: any): any {
     const out: any = { ...item };
     // uid -> id como string (UUID)
@@ -37,11 +76,12 @@ export async function fetchJogos(signal?: AbortSignal): Promise<Jogo[]> {
             headers: getAuthHeaders()
         });
         if (!res.ok) {
-            let errorMessage = `HTTP ${res.status} - ${res.statusText}`;
             if (res.status === 401) {
-                errorMessage += ' - Verifique as credenciais de autenticação';
+                const err = await extractError(res);
+                err.message = err.message + ' - Verifique as credenciais de autenticação';
+                throw err;
             }
-            throw new Error(errorMessage);
+            throw await extractError(res);
         }
 
         const json = await res.json();
@@ -83,7 +123,7 @@ export async function createJogo(payload: Partial<Jogo>): Promise<Jogo> {
             body: JSON.stringify(payload)
         });
         if (res.status !== 201 && !res.ok) {
-            throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+            throw await extractError(res);
         }
 
         const json = await res.json();
@@ -106,7 +146,7 @@ export async function updateJogo(id: string, payload: Partial<Jogo>): Promise<Jo
             body: JSON.stringify(payload)
         });
         if (!res.ok) {
-            throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+            throw await extractError(res);
         }
         const json = await res.json();
         const normalized = normalizeJogoRecord({ ...json, id: json.uid ? String(json.uid) : json.id });
@@ -126,7 +166,7 @@ export async function deleteJogo(id: string): Promise<void> {
             headers: getAuthHeaders()
         });
         if (!res.ok) {
-            throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+            throw await extractError(res);
         }
     } catch (error) {
         handleError(error, 'jogosService.deleteJogo');

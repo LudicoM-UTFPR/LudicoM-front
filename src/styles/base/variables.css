@@ -6,8 +6,8 @@
     --primary-shadow: rgba(231, 111, 81, 0.3);
 
     /* Cores de fundo */
-    --bg-primary: #1B1D20;
-    --bg-secondary: #1A161A;
+    --bg-primary: #171717;
+    --bg-secondary: black;
     --bg-tertiary: #322F2E;
     --bg-light: #FFF5EB;
     --bg-table-odd: #FAEDE6;

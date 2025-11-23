@@ -47,16 +47,10 @@ export function useParticipantes() {
   }, []);
 
   async function createRemoteParticipante(novo: Partial<Participante>): Promise<Participante> {
-    try {
-      const saved = await createParticipante(novo);
-      setParticipantes(prev => [...prev, saved]);
-      return saved;
-    } catch (e) {
-      const localId = generateId('participante');
-      const localItem = { ...novo, id: localId } as Participante;
-      setParticipantes(prev => [...prev, localItem]);
-      throw e;
-    }
+    // Sem fallback local: somente atualiza lista em sucesso
+    const saved = await createParticipante(novo);
+    setParticipantes(prev => [...prev, saved]);
+    return saved;
   }
 
   async function updateRemoteParticipante(id: string, changes: Partial<Participante>): Promise<Participante> {

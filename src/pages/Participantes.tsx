@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '../components';
+import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { participanteDetailFields, participanteEditFields, participanteCreateFields, PARTICIPANTE_COLUMNS } from '../shared/constants';
 import { useCrudOperations, useParticipantes, useInstituicoes } from '../shared/hooks';
+import { useToast } from '../components/common';
 import type { Participante, TableAction, Instituicao } from '../shared/types';
 
 const Participantes: React.FC = () => {
@@ -9,6 +11,9 @@ const Participantes: React.FC = () => {
   const { participantes, loading, error, createParticipante, updateParticipante, deleteParticipante } = useParticipantes();
   const { instituicoes } = useInstituicoes();
   const [localParticipantes, setLocalParticipantes] = useState<Participante[]>([]);
+  const { showError, showErrorList, showSuccess, showWarning } = useToast();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<Participante | null>(null);
   
   // Hook personalizado para operações CRUD
   const {
@@ -35,16 +40,30 @@ const Participantes: React.FC = () => {
   }, [participantes]);
 
   // Handlers criados usando as factories do hook
-  const handleExcluir = async (participante: Participante) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o participante?\n\nNome: ${participante.nome}\nDocumento: ${participante.documento}`)) return;
+  const askExcluir = (participante: Participante) => {
+    setToDelete(participante);
+    setConfirmOpen(true);
+  };
+
+  const confirmExcluir = async () => {
+    if (!toDelete) return;
     try {
       if (deleteParticipante) {
-        await deleteParticipante(String(participante.id));
-        setLocalParticipantes(prev => prev.filter(p => p.id !== participante.id));
+        await deleteParticipante(String(toDelete.id));
+        setLocalParticipantes(prev => prev.filter(p => p.id !== toDelete.id));
+        showSuccess('Participante excluído com sucesso!');
       }
-    } catch (e) {
-      // fallback local
-      setLocalParticipantes(prev => prev.filter(p => p.id !== participante.id));
+    } catch (e: any) {
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito: não é possível excluir participante.');
+      } else if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao excluir participante.');
+      }
+    } finally {
+      setConfirmOpen(false);
+      setToDelete(null);
     }
   };
 
@@ -58,7 +77,22 @@ const Participantes: React.FC = () => {
     }
     // Validação condicional RA
     if (instituicaoObj && !atualizado.ra) {
-      alert('RA é obrigatório quando instituição é informada.');
+      showError('RA é obrigatório quando instituição é informada.');
+      return;
+    }
+    // Unicidade (email, documento, ra) contra outros registros
+    const errors: Record<string,string> = {};
+    if (atualizado.email && localParticipantes.some(p => p.email === atualizado.email && p.id !== selectedParticipante.id)) {
+      errors.email = 'Email já cadastrado.';
+    }
+    if (atualizado.documento && localParticipantes.some(p => p.documento === atualizado.documento && p.id !== selectedParticipante.id)) {
+      errors.documento = 'Documento já cadastrado.';
+    }
+    if (atualizado.ra && localParticipantes.some(p => p.ra === atualizado.ra && p.id !== selectedParticipante.id)) {
+      errors.ra = 'RA já cadastrado.';
+    }
+    if (Object.keys(errors).length) {
+      showErrorList(errors);
       return;
     }
     const payload: Partial<Participante> = {
@@ -68,16 +102,21 @@ const Participantes: React.FC = () => {
       ra: atualizado.ra || '',
       idInstituicao: instituicaoObj ? instituicaoObj.uid : undefined
     };
-    // Otimista
-    baseSalvarEdicao({ ...selectedParticipante, ...payload, instituicao: instituicaoObj } as Participante);
     try {
       if (updateParticipante) {
         const saved = await updateParticipante(String(selectedParticipante.id), payload);
         const final = { ...saved, instituicao: instituicaoObj } as Participante;
         setLocalParticipantes(prev => prev.map(p => p.id === final.id ? final : p));
+        showSuccess('Participante atualizado com sucesso!');
       }
-    } catch (e) {
-      // erro já logado por hook
+    } catch (e: any) {
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito ao atualizar participante.');
+      } else if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError('Erro ao atualizar participante.');
+      }
     }
   };
 
@@ -88,7 +127,22 @@ const Participantes: React.FC = () => {
       instituicaoObj = instituicoes.find(i => i.nome === novo.instituicao);
     }
     if (instituicaoObj && !novo.ra) {
-      alert('RA é obrigatório quando instituição é informada.');
+      showError('RA é obrigatório quando instituição é informada.');
+      return;
+    }
+    // Unicidade (email, documento, ra)
+    const errors: Record<string,string> = {};
+    if (novo.email && localParticipantes.some(p => p.email === novo.email)) {
+      errors.email = 'Email já cadastrado.';
+    }
+    if (novo.documento && localParticipantes.some(p => p.documento === novo.documento)) {
+      errors.documento = 'Documento já cadastrado.';
+    }
+    if (novo.ra && localParticipantes.some(p => p.ra === novo.ra)) {
+      errors.ra = 'RA já cadastrado.';
+    }
+    if (Object.keys(errors).length) {
+      showErrorList(errors);
       return;
     }
     const payload: Partial<Participante> = {
@@ -103,15 +157,24 @@ const Participantes: React.FC = () => {
         const saved = await createParticipante(payload);
         const final = { ...saved, instituicao: instituicaoObj } as Participante;
         setLocalParticipantes(prev => [...prev, final]);
+        showSuccess('Participante criado com sucesso!');
         return;
       }
-    } catch (e) {
-      // fallback local
-      baseSalvarCriacao({ ...payload, instituicao: instituicaoObj });
+    } catch (e: any) {
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito ao criar participante.');
+      } else if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError('Erro ao criar participante.');
+      }
       return;
     }
-    // caso sem backend (fallback)
-    baseSalvarCriacao({ ...payload, instituicao: instituicaoObj });
+    // caso sem backend definido (fallback somente nesse cenário)
+    if (!createParticipante) {
+      baseSalvarCriacao({ ...payload, instituicao: instituicaoObj });
+      showSuccess('Participante criado localmente (modo offline).');
+    }
   };
 
 
@@ -119,7 +182,7 @@ const Participantes: React.FC = () => {
   const actions: TableAction<Participante>[] = [
     { label: 'Detalhes', onClick: handleDetalhes, variant: 'primary' },
     { label: 'Editar', onClick: handleEditar, variant: 'secondary' },
-    { label: 'Excluir', onClick: handleExcluir, variant: 'danger' }
+    { label: 'Excluir', onClick: askExcluir, variant: 'danger' }
   ];
 
   return (
@@ -145,7 +208,7 @@ const Participantes: React.FC = () => {
         fields={participanteDetailFields}
         title="Detalhes do Participante"
         onEdit={handleEditar}
-        onDelete={handleExcluir}
+        onDelete={askExcluir}
       />
 
       <EditModal<Participante>
@@ -169,6 +232,24 @@ const Participantes: React.FC = () => {
           options: instituicoes.map(i => ({ value: i.nome, label: i.nome }))
         } : f)}
         title="Criar Novo Participante"
+      />
+      <ConfirmModal
+        isOpen={confirmOpen}
+        title="Excluir Participante"
+        message={
+          toDelete ? (
+            <>
+              Tem certeza que deseja excluir o participante?<br />
+              <strong>Nome:</strong> {toDelete.nome}<br />
+              <strong>Documento:</strong> {toDelete.documento}
+            </>
+          ) : 'Tem certeza que deseja excluir o participante?'
+        }
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={confirmExcluir}
+        onCancel={() => { setConfirmOpen(false); setToDelete(null); }}
       />
     </div>
   );

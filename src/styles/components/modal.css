@@ -21,7 +21,8 @@
 /* Base Modal Styles - Shared by all modal types */
 .modal {
     background: var(--bg-table-odd);
-    background: #E6D4C9;
+    background: #f1dbcc;
+    background: var(--bg-table-odd, #f9f9f9);
     border-radius: 8px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     max-width: 600px;
@@ -48,16 +49,17 @@
     padding: 20px 24px;
     /* border-bottom: 1px solid var(--border-color, #e0e0e0); */
     background: var(--bg-table-odd, #f9f9f9);
-    /* background: #E6D4C9; */
-    /* background: #4a4a4a; */
+    background: #f1dbcc;
+
 }
 
 .modal-header h2 {
     /* text-align: center; */
     margin: 0;
     color: var(--primary-color, #E76F51);
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     font-weight: 700;
+    /* text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.15); */
 }
 
 
@@ -74,7 +76,9 @@
     padding: 16px 24px;
     /* border-top: 1px solid var(--border-color, #e0e0e0); */
     background: var(--bg-table-odd);
-    background: #E6D4C9;
+    background: #f1dbcc;
+    background: var(--bg-table-odd, #f9f9f9);
+    background: #f1dbcc;
     display: flex;
     justify-content: center;
     gap: 12px;
@@ -200,7 +204,10 @@
     margin-top: 4px;
 }
 
-
+/* Confirm Modal - message */
+.modal .confirm-message {
+    color: var(--text-secondary);
+}
 
 /* ==============================================
    RESPONSIVE DESIGN
