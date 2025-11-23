@@ -1,0 +1,335 @@
+/* ==============================================
+   LAYOUT COMPONENTS
+   ============================================== 
+   
+   Containers e estruturas de layout reutilizáveis:
+   - Containers de página
+   - Wrappers de seções
+   - Grupos de elementos
+*/
+
+/* ==============================================
+   PAGE CONTAINERS
+   ============================================== */
+
+.page-container {
+    min-height: calc(100vh - 64px);
+    /* 64px é a altura do header */
+    width: 100%;
+    max-width: 1920px;
+    /* background-color: #1B1D20; */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 48px;
+    padding-block-start: 64px;
+    padding-block-end: 50px;
+    margin-inline: auto;
+}
+
+.section-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    max-width: 1200px;
+    padding-inline: 20px;
+}
+
+.content-wrapper {
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 20px;
+}
+
+/* ==============================================
+   TABLE LAYOUTS
+   ============================================== */
+
+.table-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    padding-inline: 20px;
+}
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ==============================================
+   ACTION GROUPS
+   ============================================== */
+
+.action-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-group--vertical {
+    flex-direction: column;
+}
+
+.action-group--wrap {
+    flex-wrap: wrap;
+}
+
+.button-group {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.button-group--vertical {
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ==============================================
+   TAB LAYOUTS
+   ============================================== */
+
+.tab-container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: 0 auto 12px;
+}
+
+.tab-panel {
+    width: 100%;
+    padding-inline: 20px;
+}
+
+.tab-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.tab-btn:hover {
+    opacity: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+.tab-btn.active {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+}
+
+/* ==============================================
+   LEGACY CLASSES - COMPATIBILITY
+   ============================================== */
+
+/* Manter compatibilidade com código existente */
+.tabela-emprestimo {
+    /* Equivale a .table-section */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    padding-inline: 20px;
+}
+
+.tabela-wrapper {
+    /* Equivale a .table-wrapper */
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.acoes-grupo {
+    /* Equivale a .action-group */
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.acoes-buttons {
+    /* Equivale a .button-group */
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.emp-tabs {
+    /* Equivale a .tab-container */
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: 0 auto 12px;
+}
+
+.emp-tab {
+    /* Equivale a .tab-btn */
+    background: transparent;
+    border: 1px solid var(--border-color);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.emp-tab:hover {
+    opacity: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+.emp-tab.active {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+}
+
+.emp-tab-panel {
+    /* Equivale a .tab-panel */
+    width: 100%;
+    padding-inline: 20px;
+    margin-top: -28px;
+    /* Reduz o gap de 48px para 20px (48px - 28px = 20px) */
+}
+
+/* ==============================================
+   RESPONSIVE DESIGN
+   ============================================== */
+
+@media (max-width: 1440px) {
+
+    .section-container,
+    .table-section,
+    .tabela-emprestimo {
+        padding-inline: 100px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .section-container {
+        padding-inline: 60px;
+    }
+
+    .table-section,
+    .tabela-emprestimo {
+        padding-inline: 50px;
+    }
+
+    .table-wrapper,
+    .tabela-wrapper {
+        max-width: 970px;
+    }
+}
+
+@media (max-width: 992px) {
+    .section-container {
+        padding-inline: 40px;
+    }
+
+    .table-section,
+    .tabela-emprestimo {
+        padding-inline: 20px;
+    }
+
+    .button-group,
+    .acoes-buttons {
+        gap: 14px;
+    }
+
+    .table-wrapper,
+    .tabela-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .section-container,
+    .table-section,
+    .tabela-emprestimo {
+        padding-inline: 20px;
+    }
+
+    .button-group,
+    .acoes-buttons {
+        gap: 12px;
+    }
+
+    .table-wrapper,
+    .tabela-wrapper {
+        border-radius: var(--border-radius-lg);
+    }
+}
+
+@media (max-width: 600px) {
+
+    .button-group,
+    .acoes-buttons {
+        gap: 10px;
+        flex-direction: column;
+    }
+
+    .tab-container,
+    .emp-tabs {
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .button-group,
+    .acoes-buttons {
+        gap: 8px;
+    }
+
+    .action-group,
+    .acoes-grupo {
+        gap: 4px;
+    }
+
+    .tab-container,
+    .emp-tabs {
+        gap: 6px;
+    }
+}
