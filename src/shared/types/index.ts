@@ -51,6 +51,8 @@ export interface Participante {
   email: string;
   documento: string;
   ra: string;
+  idInstituicao?: string;
+  instituicao?: Instituicao;
 }
 
 export interface TableColumn<T> {

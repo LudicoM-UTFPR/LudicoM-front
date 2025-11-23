@@ -2,5 +2,4 @@
 export { default as useScrollVisibility } from './useScrollVisibility';
 export { default as useCrudOperations } from './useCrudOperations';
 
-export { useParticipantes, useJogos, useEmprestimos, useEventos } from './useEntityData';
-export { useInstituicoes } from './useInstituicoes';
+export { useParticipantes, useJogos, useEmprestimos, useEventos, useInstituicoes } from './useEntityData';

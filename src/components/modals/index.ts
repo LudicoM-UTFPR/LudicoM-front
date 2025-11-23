@@ -6,3 +6,5 @@ export type { EditField, EditModalProps } from './EditModal';
 export { CreateModal } from './CreateModal';
 export type { CreateField, CreateModalProps } from './CreateModal';
 export { ConsultModal } from './ConsultModal';
+export { ConfirmModal } from './ConfirmModal';
+export type { ConfirmModalProps } from './ConfirmModal';
