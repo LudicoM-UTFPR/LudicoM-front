@@ -148,6 +148,49 @@
     gap: 6px;
 }
 
+/* Inline field action support */
+.input-with-action,
+.text-wrapper.with-action,
+.select-wrapper.with-action,
+.autocomplete-wrapper.with-action,
+.number-wrapper.with-action,
+.date-wrapper.with-action,
+.time-wrapper.with-action {
+    position: relative;
+}
+
+.field-input.has-inline-action {
+    padding-right: 44px;
+    /* espaço para botão */
+}
+
+.field-inline-action-btn {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    background: var(--primary-color, #E76F51);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.field-inline-action-btn:hover {
+    background: #d65f44;
+}
+
+.field-inline-action-btn:active {
+    transform: translateY(-50%) scale(0.96);
+}
+
 .required {
     color: #DC3545;
     margin-left: 4px;
@@ -155,6 +198,7 @@
 
 /* Form Input Base */
 .field-input {
+    width: 100%;
     padding: 12px 16px;
     border: 1px solid var(--border-color, #e0e0e0);
     border-radius: var(--border-radius, 6px);

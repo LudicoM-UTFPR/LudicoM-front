@@ -19,6 +19,10 @@ export interface CreateModalProps<T> {
   onSave: (newItem: Omit<T, 'id'>) => void;
   fields: CreateField<T>[];
   title?: string;
+  // Ações inline reutilizáveis por campo (exibir botão dentro do input)
+  inlineFieldActions?: Record<string, { label?: string; title?: string; icon?: React.ReactNode; onClick: () => void }>;
+  // Prefill externo: quando muda, mescla valores no form sem reinicializar tudo
+  prefill?: Partial<Omit<T, 'id'>>;
 }
 
 export function CreateModal<T extends { id: number | string }>({ 
@@ -26,7 +30,9 @@ export function CreateModal<T extends { id: number | string }>({
   onClose, 
   onSave,
   fields, 
-  title = 'Criar Novo Item' 
+  title = 'Criar Novo Item',
+  inlineFieldActions,
+  prefill
 }: CreateModalProps<T>) {
   const [formData, setFormData] = useState<Partial<Omit<T, 'id'>>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -40,10 +46,23 @@ export function CreateModal<T extends { id: number | string }>({
           initialData[field.key as keyof Omit<T, 'id'>] = field.defaultValue;
         }
       });
+      // Aplica prefill inicial (se vier junto na primeira abertura)
+      if (prefill) {
+        Object.entries(prefill).forEach(([k, v]) => {
+          if (k !== 'id') (initialData as any)[k] = v;
+        });
+      }
       setFormData(initialData);
       setErrors({});
     }
   }, [isOpen, fields]);
+
+  // Prefill dinâmico: quando prop prefill muda enquanto modal aberto
+  useEffect(() => {
+    if (isOpen && prefill && Object.keys(prefill).length) {
+      setFormData(prev => ({ ...prev, ...prefill }));
+    }
+  }, [prefill, isOpen]);
 
   if (!isOpen) return null;
 
@@ -113,6 +132,7 @@ export function CreateModal<T extends { id: number | string }>({
     
     const value = formData[field.key as keyof Omit<T, 'id'>];
     const error = errors[field.key as string];
+    const action = inlineFieldActions && inlineFieldActions[field.key as string];
 
     switch (field.type) {
       case 'boolean':
@@ -129,74 +149,158 @@ export function CreateModal<T extends { id: number | string }>({
 
       case 'select':
         return (
-          <select
-            className={`field-input ${error ? 'error' : ''}`}
-            value={String(value || '')}
-            onChange={(e) => {
-              const selectedValue = field.options?.find(opt => String(opt.value) === e.target.value)?.value;
-              handleInputChange(field.key, selectedValue);
-            }}
-          >
-            <option value="">Selecione...</option>
-            {field.options?.map((option) => (
-              <option key={String(option.value)} value={String(option.value)}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <div className={`select-wrapper${action ? ' with-action' : ''}`}>
+            <div className={`input-with-action${action ? ' has-action' : ''}`}>
+            <select
+              className={`field-input ${error ? 'error' : ''} ${action ? 'has-inline-action' : ''}`}
+              value={String(value || '')}
+              onChange={(e) => {
+                const selectedValue = field.options?.find(opt => String(opt.value) === e.target.value)?.value;
+                handleInputChange(field.key, selectedValue);
+              }}
+            >
+              <option value="">Selecione...</option>
+              {field.options?.map((option) => (
+                <option key={String(option.value)} value={String(option.value)}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {action && (
+              <button
+                type="button"
+                className="field-inline-action-btn"
+                title={action.title || action.label}
+                onClick={action.onClick}
+              >
+                {action.icon || action.label || '+'}
+              </button>
+            )}
+            </div>
+          </div>
         );
 
       case 'autocomplete':
         return (
-          <Autocomplete
-            value={String(value || '')}
-            onChange={(newValue) => handleInputChange(field.key, newValue)}
-            options={field.options || []}
-            placeholder={field.placeholder}
-            className={`field-input ${error ? 'error' : ''}`}
-          />
+          <div className={`autocomplete-wrapper${action ? ' with-action' : ''}`}>
+            <div className={`input-with-action${action ? ' has-action' : ''}`}>
+            <Autocomplete
+              value={String(value || '')}
+              onChange={(newValue) => handleInputChange(field.key, newValue)}
+              options={field.options || []}
+              placeholder={field.placeholder}
+              className={`field-input ${error ? 'error' : ''} ${action ? 'has-inline-action' : ''}`}
+            />
+            {action && (
+              <button
+                type="button"
+                className="field-inline-action-btn"
+                title={action.title || action.label}
+                onClick={action.onClick}
+              >
+                {action.icon || action.label || '+'}
+              </button>
+            )}
+            </div>
+          </div>
         );
 
       case 'number':
         return (
-          <input
-            type="number"
-            className={`field-input ${error ? 'error' : ''}`}
-            value={value !== undefined && value !== null ? String(value) : ''}
-            placeholder={field.placeholder}
-            onChange={(e) => handleInputChange(field.key, Number(e.target.value) || 0)}
-          />
+          <div className={`number-wrapper${action ? ' with-action' : ''}`}>
+            <div className={`input-with-action${action ? ' has-action' : ''}`}>
+            <input
+              type="number"
+              className={`field-input ${error ? 'error' : ''} ${action ? 'has-inline-action' : ''}`}
+              value={value !== undefined && value !== null ? String(value) : ''}
+              placeholder={field.placeholder}
+              onChange={(e) => handleInputChange(field.key, Number(e.target.value) || 0)}
+            />
+            {action && (
+              <button
+                type="button"
+                className="field-inline-action-btn"
+                title={action.title || action.label}
+                onClick={action.onClick}
+              >
+                {action.icon || action.label || '+'}
+              </button>
+            )}
+            </div>
+          </div>
         );
 
       case 'date':
         return (
-          <input
-            type="date"
-            className={`field-input ${error ? 'error' : ''}`}
-            value={value ? String(value).split('T')[0] : ''}
-            onChange={(e) => handleInputChange(field.key, e.target.value)}
-          />
+          <div className={`date-wrapper${action ? ' with-action' : ''}`}>
+            <div className={`input-with-action${action ? ' has-action' : ''}`}>
+            <input
+              type="date"
+              className={`field-input ${error ? 'error' : ''} ${action ? 'has-inline-action' : ''}`}
+              value={value ? String(value).split('T')[0] : ''}
+              onChange={(e) => handleInputChange(field.key, e.target.value)}
+            />
+            {action && (
+              <button
+                type="button"
+                className="field-inline-action-btn"
+                title={action.title || action.label}
+                onClick={action.onClick}
+              >
+                {action.icon || action.label || '+'}
+              </button>
+            )}
+            </div>
+          </div>
         );
 
       case 'time':
         return (
-          <input
-            type="time"
-            className={`field-input ${error ? 'error' : ''}`}
-            value={value ? String(value).substring(0, 5) : ''}
-            onChange={(e) => handleInputChange(field.key, e.target.value)}
-          />
+          <div className={`time-wrapper${action ? ' with-action' : ''}`}>
+            <div className={`input-with-action${action ? ' has-action' : ''}`}>
+            <input
+              type="time"
+              className={`field-input ${error ? 'error' : ''} ${action ? 'has-inline-action' : ''}`}
+              value={value ? String(value).substring(0, 5) : ''}
+              onChange={(e) => handleInputChange(field.key, e.target.value)}
+            />
+            {action && (
+              <button
+                type="button"
+                className="field-inline-action-btn"
+                title={action.title || action.label}
+                onClick={action.onClick}
+              >
+                {action.icon || action.label || '+'}
+              </button>
+            )}
+            </div>
+          </div>
         );
 
       default: // text, email
         return (
-          <input
-            type={field.type}
-            className={`field-input ${error ? 'error' : ''}`}
-            value={String(value || '')}
-            placeholder={field.placeholder}
-            onChange={(e) => handleInputChange(field.key, e.target.value)}
-          />
+          <div className={`text-wrapper${action ? ' with-action' : ''}`}>
+            <div className={`input-with-action${action ? ' has-action' : ''}`}>
+            <input
+              type={field.type}
+              className={`field-input ${error ? 'error' : ''} ${action ? 'has-inline-action' : ''}`}
+              value={String(value || '')}
+              placeholder={field.placeholder}
+              onChange={(e) => handleInputChange(field.key, e.target.value)}
+            />
+            {action && (
+              <button
+                type="button"
+                className="field-inline-action-btn"
+                title={action.title || action.label}
+                onClick={action.onClick}
+              >
+                {action.icon || action.label || '+'}
+              </button>
+            )}
+            </div>
+          </div>
         );
     }
   };

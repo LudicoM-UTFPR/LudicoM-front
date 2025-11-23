@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '../components';
 import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { participanteDetailFields, participanteEditFields, participanteCreateFields, PARTICIPANTE_COLUMNS } from '../shared/constants';
+import { instituicaoCreateFields } from '../shared/constants/createFields';
 import { useCrudOperations, useParticipantes, useInstituicoes } from '../shared/hooks';
 import { useToast } from '../components/common';
 import type { Participante, TableAction, Instituicao } from '../shared/types';
@@ -9,11 +10,13 @@ import type { Participante, TableAction, Instituicao } from '../shared/types';
 const Participantes: React.FC = () => {
   // Hook para gerenciamento de dados
   const { participantes, loading, error, createParticipante, updateParticipante, deleteParticipante } = useParticipantes();
-  const { instituicoes } = useInstituicoes();
+  const { instituicoes, createInstituicao } = useInstituicoes();
   const [localParticipantes, setLocalParticipantes] = useState<Participante[]>([]);
   const { showError, showErrorList, showSuccess, showWarning } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState<Participante | null>(null);
+  const [showCreateInstituicao, setShowCreateInstituicao] = useState(false);
+  const [newInstituicaoNamePrefill, setNewInstituicaoNamePrefill] = useState<string>('');
   
   // Hook personalizado para operações CRUD
   const {
@@ -43,6 +46,25 @@ const Participantes: React.FC = () => {
   const askExcluir = (participante: Participante) => {
     setToDelete(participante);
     setConfirmOpen(true);
+  };
+
+  // Criação inline de instituição a partir do modal de participante
+  const handleSalvarNovaInstituicao = async (nova: any) => {
+    if (!createInstituicao) return;
+    try {
+      const saved = await createInstituicao({ nome: nova.nome, endereco: nova.endereco || '' });
+      setShowCreateInstituicao(false);
+      setNewInstituicaoNamePrefill(saved.nome);
+      showSuccess('Instituição criada com sucesso!');
+    } catch (e: any) {
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito ao criar instituição.');
+      } else if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao criar instituição.');
+      }
+    }
   };
 
   const confirmExcluir = async () => {
@@ -231,7 +253,22 @@ const Participantes: React.FC = () => {
           ...f,
           options: instituicoes.map(i => ({ value: i.nome, label: i.nome }))
         } : f)}
+        inlineFieldActions={{
+          instituicao: {
+            label: '+',
+            title: 'Criar nova instituição',
+            onClick: () => setShowCreateInstituicao(true)
+          }
+        }}
+        prefill={newInstituicaoNamePrefill ? { instituicao: newInstituicaoNamePrefill } as any : undefined}
         title="Criar Novo Participante"
+      />
+      <CreateModal
+        isOpen={showCreateInstituicao}
+        onClose={() => setShowCreateInstituicao(false)}
+        onSave={handleSalvarNovaInstituicao as any}
+        fields={instituicaoCreateFields as any}
+        title="Criar Instituição"
       />
       <ConfirmModal
         isOpen={confirmOpen}
