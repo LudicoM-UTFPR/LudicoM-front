@@ -13,7 +13,7 @@ interface ToastContextType {
   showError: (message: string) => void;
   showSuccess: (message: string) => void;
   showWarning: (message: string) => void;
-  showErrorList: (errors: Record<string, string>) => void;
+  showErrorList: (errors: Record<string, string>, type?: 'error' | 'warning' | 'success' | 'info') => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -50,11 +50,19 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     showToast(message, 'warning', 5000);
   }, [showToast]);
 
-  const showErrorList = useCallback((errors: Record<string, string>) => {
-    Object.entries(errors).forEach(([field, message]) => {
-      showError(message);
+  const showErrorList = useCallback((errors: Record<string, string>, type: 'error' | 'warning' | 'success' | 'info' = 'error') => {
+    Object.entries(errors).forEach(([, message]) => {
+      if (type === 'warning') {
+        showWarning(message);
+      } else if (type === 'success') {
+        showSuccess(message);
+      } else if (type === 'info') {
+        showToast(message, 'info');
+      } else {
+        showError(message);
+      }
     });
-  }, [showError]);
+  }, [showError, showWarning, showSuccess, showToast]);
 
   const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));

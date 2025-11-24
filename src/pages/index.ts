@@ -5,3 +5,4 @@ export { default as Jogos } from './Jogos';
 export { default as Participantes } from './Participantes';
 export { default as Emprestimos } from './Emprestimos';
 export { default as Login } from './Login';
+export { default as Instituicoes } from './Instituicoes';

@@ -36,7 +36,12 @@ export const PARTICIPANTE_COLUMNS: TableColumn<Participante>[] = [
   { key: 'nome', label: 'Nome' },
   { key: 'documento', label: 'CPF' },
   { key: 'ra', label: 'RA' },
-  { key: 'email', label: 'E-mail' }
+  { key: 'email', label: 'E-mail' },
+  {
+    key: 'instituicao',
+    label: 'Instituição',
+    render: (value: Instituicao | undefined) => value?.nome || '—'
+  }
 ];
 
 // Colunas para Eventos
@@ -79,4 +84,10 @@ export const EMPRESTIMO_DETAIL_COLUMNS: TableColumn<Emprestimo>[] = [
     label: 'Horário Devolução',
     render: (value: string | null) => value ? String(value) : 'N/A'
   }
+];
+
+// Colunas para Instituições
+export const INSTITUICAO_COLUMNS: TableColumn<Instituicao>[] = [
+  { key: 'nome', label: 'Nome' },
+  { key: 'endereco', label: 'Endereço' }
 ];

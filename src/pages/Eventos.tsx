@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '../components';
+import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { useToast } from '../components/common';
 import { eventoDetailFields, eventoEditFields, eventoCreateFields, EVENTO_COLUMNS } from '../shared/constants';
 import { useCrudOperations, useEventos, useInstituicoes } from '../shared/hooks';
@@ -11,8 +12,10 @@ import type { EditField } from '../components/modals/EditModal';
 const Eventos: React.FC = () => {
   const { eventos: remoteEventos, loading, error, createEvento, updateEvento, deleteEvento } = useEventos();
   const { instituicoes } = useInstituicoes();
-  const { showErrorList, showError, showSuccess } = useToast();
+  const { showErrorList, showError, showSuccess, showWarning } = useToast();
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<Evento | null>(null);
   
   // Hook personalizado para operações CRUD
   const {
@@ -38,35 +41,34 @@ const Eventos: React.FC = () => {
   }, [remoteEventos]);
 
   // Handlers personalizados usando os factories do hook
-  const baseHandleExcluir = createHandleExcluir(
-    eventos,
-    setEventos,
-    (evento: Evento) => `Tem certeza que deseja excluir o evento?\n\nData: ${evento.data}\nInstituição: ${evento.instituicao}`
-  );
+  const askExcluir = (evento: Evento) => {
+    setToDelete(evento);
+    setConfirmOpen(true);
+  };
 
-  const handleExcluir = async (evento: Evento) => {
-    console.log(evento);
-    if (!window.confirm(`Tem certeza que deseja excluir o evento?\n\nData: ${evento.data}\nInstituição: ${evento.instituicao}`)) return;
+  const confirmExcluir = async () => {
+    if (!toDelete) return;
     try {
       if (deleteEvento) {
-        await deleteEvento(String(evento.id));
-        setEventos(prev => prev.filter(e => e.id !== evento.id));
+        await deleteEvento(String(toDelete.id));
+        setEventos(prev => prev.filter(e => e.id !== toDelete.id));
         showSuccess('Evento excluído com sucesso!');
-      } else {
-        baseHandleExcluir(evento);
       }
     } catch (e: any) {
       handleError(e, 'Eventos - delete');
-      if (e?.errors) {
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito: não é possível excluir evento.');
+      } else if (e?.errors) {
         showErrorList(e.errors);
       } else {
         showError(e?.message || 'Erro ao excluir evento');
       }
-      baseHandleExcluir(evento); // fallback local
+    } finally {
+      setConfirmOpen(false);
+      setToDelete(null);
     }
   };
 
-  const localSalvarEdicao = createHandleSalvarEdicao(eventos, setEventos);
   const handleSalvarEdicao = async (eventoEditado: any) => {
     try {
       // Encontrar instituição selecionada pelo nome digitado
@@ -85,16 +87,8 @@ const Eventos: React.FC = () => {
         horaFim: ensureHHMMSS(eventoEditado.horaFim)
       };
 
-      // Atualização otimista local (mantém objeto instituição para exibição)
-      const eventoLocalAtualizado: Evento = {
-        ...selectedEvento!,
-        ...payload,
-        instituicao: instituicaoSelecionada
-      };
-      localSalvarEdicao(eventoLocalAtualizado);
-
       if (updateEvento) {
-        const atualizadoRemoto = await updateEvento(eventoLocalAtualizado.id, payload);
+        const atualizadoRemoto = await updateEvento(selectedEvento!.id, payload);
         // Garantir que lista mantenha objeto instituição e normalizar horário para exibição (HH:mm)
         const eventoFinal = {
           ...atualizadoRemoto,
@@ -107,7 +101,9 @@ const Eventos: React.FC = () => {
       }
     } catch (e: any) {
       handleError(e, 'Eventos - update');
-      if (e?.errors) {
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito ao atualizar evento.');
+      } else if (e?.errors) {
         showErrorList(e.errors);
       } else {
         showError(e?.message || 'Erro ao atualizar evento');
@@ -152,7 +148,9 @@ const Eventos: React.FC = () => {
       }
     } catch (e: any) {
       handleError(e, 'Eventos - create');
-      if (e?.errors) {
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito ao criar evento.');
+      } else if (e?.errors) {
         showErrorList(e.errors);
       } else {
         showError(e?.message || 'Erro ao criar evento');
@@ -164,7 +162,7 @@ const Eventos: React.FC = () => {
   const actions: TableAction<Evento>[] = [
     { label: 'Detalhes', onClick: handleDetalhes, variant: 'primary' },
     { label: 'Editar', onClick: handleEditar, variant: 'secondary' },
-    { label: 'Excluir', onClick: handleExcluir, variant: 'danger' }
+    { label: 'Excluir', onClick: askExcluir, variant: 'danger' }
   ];
 
   // Campos de criação com lista de instituições
@@ -228,7 +226,7 @@ const Eventos: React.FC = () => {
         fields={eventoDetailFields}
         title="Detalhes do Evento"
         onEdit={handleEditar}
-        onDelete={handleExcluir}
+        onDelete={askExcluir}
       />
 
       <EditModal<Evento>
@@ -246,6 +244,24 @@ const Eventos: React.FC = () => {
         onSave={handleSalvarCriacao}
         fields={eventoCreateFieldsWithOptions}
         title="Criar Novo Evento"
+      />
+      <ConfirmModal
+        isOpen={confirmOpen}
+        title="Excluir Evento"
+        message={
+          toDelete ? (
+            <>
+              Tem certeza que deseja excluir o evento?<br />
+              <strong>Data:</strong> {toDelete.data}<br />
+              <strong>Instituição:</strong> {toDelete?.instituicao?.nome}
+            </>
+          ) : 'Tem certeza que deseja excluir o evento?'
+        }
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={confirmExcluir}
+        onCancel={() => { setConfirmOpen(false); setToDelete(null); }}
       />
     </div>
   );

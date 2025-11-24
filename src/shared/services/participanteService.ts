@@ -1,4 +1,4 @@
-import type { Instituicao } from '../types';
+import type { Participante, Instituicao } from '../types';
 import { API_BASE_URL } from '../constants';
 import { validateEntityData, ENTITY_SCHEMAS, handleError } from '../utils';
 import { getAuthHeaders } from './authService';
@@ -15,7 +15,7 @@ async function extractError(res: Response): Promise<Error> {
         if (body.errors && typeof body.errors === 'object') err.errors = body.errors;
         else if (Array.isArray(body.errors)) {
           const mapped: Record<string,string> = {};
-          body.errors.forEach((m: string, i: number) => mapped[`error_${i}`] = m);
+            body.errors.forEach((m: string, i: number) => mapped[`error_${i}`] = m);
           err.errors = mapped;
         }
         return err;
@@ -30,25 +30,44 @@ async function extractError(res: Response): Promise<Error> {
   return generic;
 }
 
-// Base helper para construir URL sem barras duplicadas
 const base = API_BASE_URL?.replace(/\/+$/, '') || '';
-const ENDPOINT = `${base}/instituicao`;
+const ENDPOINT = `${base}/participante`;
 
-export async function fetchInstituicoes(signal?: AbortSignal): Promise<Instituicao[]> {
+function normalize(record: any): any {
+  const out: any = { ...record };
+  if (out.uid && !out.id) out.id = String(out.uid);
+  if (out.instituicao && typeof out.instituicao === 'object') {
+    // garante shape esperado
+    const inst: any = out.instituicao;
+    out.instituicao = {
+      uid: String(inst.uid || ''),
+      nome: String(inst.nome || ''),
+      endereco: String(inst.endereco || '')
+    };
+    out.idInstituicao = out.instituicao.uid || out.idInstituicao;
+  } else {
+    if (out.idInstituicao && !out.instituicao) {
+      out.instituicao = { uid: String(out.idInstituicao), nome: '', endereco: '' };
+    }
+  }
+  return out;
+}
+
+export async function fetchParticipantes(signal?: AbortSignal): Promise<Participante[]> {
   try {
     const res = await fetch(ENDPOINT, { signal, headers: getAuthHeaders() });
     if (!res.ok) throw await extractError(res);
     const json = await res.json();
-    // Validação e normalização conforme schema atualizado
-    const validated = validateEntityData<Instituicao>(json, ENTITY_SCHEMAS.instituicao as any);
+    const normalized = Array.isArray(json) ? json.map(normalize) : [];
+    const validated = validateEntityData<Participante>(normalized, ENTITY_SCHEMAS.participante as any);
     return validated;
   } catch (e) {
-    handleError(e, 'instituicaoService.fetchInstituicoes');
+    handleError(e, 'participanteService.fetchParticipantes');
     throw e;
   }
 }
 
-export async function createInstituicao(payload: Partial<Instituicao>): Promise<Instituicao> {
+export async function createParticipante(payload: Partial<Participante>): Promise<Participante> {
   try {
     const res = await fetch(ENDPOINT, {
       method: 'POST',
@@ -57,15 +76,16 @@ export async function createInstituicao(payload: Partial<Instituicao>): Promise<
     });
     if (res.status !== 201 && !res.ok) throw await extractError(res);
     const json = await res.json();
-    const validated = validateEntityData<Instituicao>([json], ENTITY_SCHEMAS.instituicao as any)[0];
+    const normalized = normalize(json);
+    const validated = validateEntityData<Participante>([normalized], ENTITY_SCHEMAS.participante as any)[0];
     return validated;
   } catch (e) {
-    handleError(e, 'instituicaoService.createInstituicao');
+    handleError(e, 'participanteService.createParticipante');
     throw e;
   }
 }
 
-export async function updateInstituicao(id: string, changes: Partial<Instituicao>): Promise<Instituicao> {
+export async function updateParticipante(id: string, changes: Partial<Participante>): Promise<Participante> {
   const url = `${ENDPOINT}/${encodeURIComponent(String(id))}`;
   try {
     const res = await fetch(url, {
@@ -75,24 +95,22 @@ export async function updateInstituicao(id: string, changes: Partial<Instituicao
     });
     if (!res.ok) throw await extractError(res);
     const json = await res.json();
-    const validated = validateEntityData<Instituicao>([json], ENTITY_SCHEMAS.instituicao as any)[0];
+    const normalized = normalize(json);
+    const validated = validateEntityData<Participante>([normalized], ENTITY_SCHEMAS.participante as any)[0];
     return validated;
   } catch (e) {
-    handleError(e, 'instituicaoService.updateInstituicao');
+    handleError(e, 'participanteService.updateParticipante');
     throw e;
   }
 }
 
-export async function deleteInstituicao(id: string): Promise<void> {
+export async function deleteParticipante(id: string): Promise<void> {
   const url = `${ENDPOINT}/${encodeURIComponent(String(id))}`;
   try {
-    const res = await fetch(url, {
-      method: 'DELETE',
-      headers: getAuthHeaders()
-    });
+    const res = await fetch(url, { method: 'DELETE', headers: getAuthHeaders() });
     if (!res.ok) throw await extractError(res);
   } catch (e) {
-    handleError(e, 'instituicaoService.deleteInstituicao');
+    handleError(e, 'participanteService.deleteParticipante');
     throw e;
   }
 }

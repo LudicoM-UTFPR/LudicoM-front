@@ -3,6 +3,34 @@ import { API_BASE_URL } from "../constants";
 import { validateEntityData, ENTITY_SCHEMAS, handleError } from "../utils";
 import { getAuthHeaders } from "./authService";
 
+async function extractError(res: Response): Promise<Error> {
+  let base = `HTTP ${res.status} - ${res.statusText}`;
+  try {
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('application/json')) {
+      const body = await res.json();
+      if (body) {
+        if (typeof body.message === 'string') base = body.message;
+        const err: any = new Error(base);
+        err.status = res.status;
+        if (body.errors && typeof body.errors === 'object') err.errors = body.errors;
+        else if (Array.isArray(body.errors)) {
+          const mapped: Record<string,string> = {};
+          body.errors.forEach((m: string, i: number) => mapped[`error_${i}`] = m);
+          err.errors = mapped;
+        }
+        return err;
+      }
+    } else {
+      const text = await res.text();
+      if (text) base = text.length < 500 ? text : base;
+    }
+  } catch { /* ignore */ }
+  const generic: any = new Error(base);
+  generic.status = res.status;
+  return generic;
+}
+
 // Base helper para construir URL sem barras duplicadas
 const base = API_BASE_URL?.replace(/\/+$/, "") || "";
 const ENDPOINT = `${base}/evento`;
@@ -10,9 +38,7 @@ const ENDPOINT = `${base}/evento`;
 export async function fetchEventos(signal?: AbortSignal): Promise<Evento[]> {
   try {
     const res = await fetch(ENDPOINT, { signal, headers: getAuthHeaders() });
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} - ${res.statusText}`);
-    }
+    if (!res.ok) throw await extractError(res);
     const json = await res.json();
     // Validação e normalização conforme schema atualizado
     let normalized = json;
@@ -54,14 +80,13 @@ export async function createEvento(payload: Partial<Evento>): Promise<Evento> {
     const json = await res.json();
 
     if (res.status !== 201 && !res.ok) {
-      // Se houver erros de validação, propaga com a estrutura
       if (json.errors) {
-        const error: any = new Error(json.message || "Erro de validação");
-        error.errors = json.errors;
-        error.status = res.status;
-        throw error;
+        const err: any = new Error(json.message || 'Erro de validação');
+        err.errors = json.errors;
+        err.status = res.status;
+        throw err;
       }
-      throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+      throw await extractError(res);
     }
 
     const validated = validateEntityData<Evento>(
@@ -90,14 +115,13 @@ export async function updateEvento(
     const json = await res.json();
 
     if (!res.ok) {
-      // Se houver erros de validação, propaga com a estrutura
       if (json.errors) {
-        const error: any = new Error(json.message || "Erro de validação");
-        error.errors = json.errors;
-        error.status = res.status;
-        throw error;
+        const err: any = new Error(json.message || 'Erro de validação');
+        err.errors = json.errors;
+        err.status = res.status;
+        throw err;
       }
-      throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+      throw await extractError(res);
     }
 
     const normalized = { ...json, id: json.uid ? String(json.uid) : json.id };
@@ -122,14 +146,13 @@ export async function deleteEvento(id: string): Promise<void> {
     });
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
-      // Se houver erros de validação, propaga com a estrutura
       if (json.errors) {
-        const error: any = new Error(json.message || "Erro de validação");
-        error.errors = json.errors;
-        error.status = res.status;
-        throw error;
+        const err: any = new Error(json.message || 'Erro de validação');
+        err.errors = json.errors;
+        err.status = res.status;
+        throw err;
       }
-      throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+      throw await extractError(res);
     }
   } catch (e) {
     handleError(e, "eventosService.deleteEvento");

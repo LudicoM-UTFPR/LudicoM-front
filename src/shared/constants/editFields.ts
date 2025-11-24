@@ -1,5 +1,5 @@
 import { EditField } from '../../components/modals/EditModal';
-import { Jogo, Participante, Evento, Emprestimo } from '../types';
+import { Jogo, Participante, Evento, Emprestimo, Instituicao } from '../types';
 import { VALIDATION_PATTERNS, VALIDATION_MESSAGES, ValidationUtils } from '../utils/validations';
 
 // Configuração de campos editáveis para Jogos
@@ -95,8 +95,8 @@ export const participanteEditFields: EditField<Participante>[] = [
     required: true,
     placeholder: 'Nome completo do participante...',
     validation: (value: string) => {
-      if (value.length < 2) return VALIDATION_MESSAGES.NAME_MIN;
-      if (value.length > 100) return VALIDATION_MESSAGES.NAME_MAX;
+      if (value.trim().length < 1) return 'Nome é obrigatório';
+      if (value.length > 200) return 'Nome deve ter no máximo 200 caracteres';
       return null;
     }
   },
@@ -108,6 +108,7 @@ export const participanteEditFields: EditField<Participante>[] = [
     placeholder: 'exemplo@email.com',
     validation: (value: string) => {
       if (!ValidationUtils.isValidEmail(value)) return VALIDATION_MESSAGES.EMAIL_INVALID;
+      if (value.length > 150) return 'E-mail deve ter no máximo 150 caracteres';
       return null;
     }
   },
@@ -118,20 +119,28 @@ export const participanteEditFields: EditField<Participante>[] = [
     required: true,
     placeholder: '000.000.000-00',
     validation: (value: string) => {
-      if (value.length < 8) return 'Documento deve ter pelo menos 8 caracteres';
-      if (value.length > 20) return 'Documento deve ter no máximo 20 caracteres';
+      if (value.trim().length < 1) return 'Documento é obrigatório';
+      if (value.length > 30) return 'Documento deve ter no máximo 30 caracteres';
       return null;
     }
+  },
+  {
+    key: 'instituicao',
+    label: 'Instituição (Opcional)',
+    type: 'autocomplete',
+    required: false,
+    placeholder: 'Digite para buscar instituição...',
+    dataListId: 'participante-instituicoes-list-edit'
   },
   { 
     key: 'ra', 
     label: 'RA (Registro Acadêmico)', 
     type: 'text', 
-    required: true,
-    placeholder: 'RA do participante...',
+    required: false,
+    placeholder: 'RA (obrigatório se instituição informada)...',
     validation: (value: string) => {
-      if (value.length < 4) return 'RA deve ter pelo menos 4 caracteres';
-      if (value.length > 20) return 'RA deve ter no máximo 20 caracteres';
+      if (!value) return null; // validação condicional na página
+      if (value.length > 15) return 'RA deve ter no máximo 15 caracteres';
       return null;
     }
   }
@@ -230,5 +239,31 @@ export const emprestimoEditFields: EditField<Emprestimo>[] = [
     key: 'isDevolvido', 
     label: 'Item Devolvido', 
     type: 'boolean'
+  }
+];
+
+// Configuração de campos editáveis para Instituições
+export const instituicaoEditFields: EditField<Instituicao>[] = [
+  {
+    key: 'nome',
+    label: 'Nome da Instituição',
+    type: 'text',
+    required: true,
+    placeholder: 'Digite o nome... ',
+    validation: (value: string) => {
+      if (!value || value.trim().length < 1) return 'Nome é obrigatório';
+      if (value.length > 200) return 'Nome deve ter no máximo 200 caracteres';
+      return null;
+    }
+  },
+  {
+    key: 'endereco',
+    label: 'Endereço',
+    type: 'text',
+    placeholder: 'Endereço (opcional)...',
+    validation: (value: string) => {
+      if (value && value.length > 255) return 'Endereço deve ter no máximo 255 caracteres';
+      return null;
+    }
   }
 ];
