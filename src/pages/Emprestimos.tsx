@@ -1,11 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '../components';
+import { useToast } from '../components/common';
 import { emprestimoDetailFields, emprestimoEditFields, emprestimoCreateFields, MESSAGES, EMPRESTIMO_COLUMNS, EMPRESTIMO_DETAIL_COLUMNS } from '../shared/constants';
+import { useJogos, useParticipantes } from '../shared/hooks';
+import { createEmprestimo, updateEmprestimo, deleteEmprestimo, fetchEmprestimos } from '../shared/services/emprestimosService';
+import type { CreateField } from '../components/modals/CreateModal';
 import emprestimosData from '../shared/data/emprestimos.json';
 import { handleError, formatTimeHHMM, isoToHHMM, getDevolvidosLocal, generateId } from '../shared/utils';
 import type { Emprestimo, TableAction } from '../shared/types';
 
 const Emprestimos: React.FC = () => {
+  const { jogos } = useJogos();
+  const { participantes } = useParticipantes();
+  const { showErrorList, showError, showSuccess } = useToast();
   const [emprestimosAtivos, setEmprestimosAtivos] = useState<Emprestimo[]>([]);
   const [historicoEmprestimos, setHistoricoEmprestimos] = useState<Emprestimo[]>([]);
   const [selectedEmprestimo, setSelectedEmprestimo] = useState<Emprestimo | null>(null);
@@ -58,36 +65,106 @@ const Emprestimos: React.FC = () => {
     setIsCreateModalOpen(true);
   }, []);
 
-  const handleSalvarCriacao = (novoEmprestimo: any) => {
-    const emprestimoComId = {
-      ...novoEmprestimo,
-      id: generateId('emprestimo'),
-      status: 'Ativo'
-    };
-    setEmprestimosAtivos([...emprestimosAtivos, emprestimoComId]);
-    setIsCreateModalOpen(false);
+  const handleSalvarCriacao = async (novoEmprestimo: any) => {
+    try {
+      // Encontrar jogo e participante pelos nomes para pegar os IDs
+      const jogoSelecionado = jogos.find(j => j.nome === novoEmprestimo.jogo);
+      const participanteSelecionado = participantes.find(p => p.nome === novoEmprestimo.participante);
+
+      if (!jogoSelecionado) {
+        showError('Jogo não encontrado. Selecione um jogo válido.');
+        return;
+      }
+
+      if (!participanteSelecionado) {
+        showError('Participante não encontrado. Selecione um participante válido.');
+        return;
+      }
+
+      // Construir payload para API - usa uid (UUID) quando disponível
+      const payload = {
+        idJogo: (jogoSelecionado as any).uid || jogoSelecionado.id,
+        idParticipante: (participanteSelecionado as any).uid || participanteSelecionado.id,
+        idEvento: '1', // TODO: pegar do contexto ou evento atual
+        horaEmprestimo: novoEmprestimo.horaEmprestimo,
+        horaDevolucao: novoEmprestimo.horaDevolucao || null,
+        isDevolvido: novoEmprestimo.isDevolvido || false,
+        observacoes: novoEmprestimo.observacoes || ''
+      };
+
+      const saved = await createEmprestimo(payload);
+      
+      // Adicionar informações de exibição
+      const emprestimoCompleto = {
+        ...saved,
+        jogo: jogoSelecionado.nome,
+        participante: participanteSelecionado.nome,
+        horario: saved.horaEmprestimo
+      };
+
+      if (emprestimoCompleto.isDevolvido) {
+        setHistoricoEmprestimos(prev => [...prev, emprestimoCompleto]);
+      } else {
+        setEmprestimosAtivos(prev => [...prev, emprestimoCompleto]);
+      }
+      
+      showSuccess('Empréstimo registrado com sucesso!');
+      setIsCreateModalOpen(false);
+    } catch (e: any) {
+      handleError(e, 'Emprestimos - create');
+      if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao criar empréstimo');
+      }
+    }
   };
 
   // Handlers para empréstimos ativos
-  const handleExcluirAtivo = useCallback((emprestimo: Emprestimo) => {
-    if (window.confirm(`Tem certeza que deseja excluir o empréstimo?\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}`)) {
+  const handleExcluirAtivo = useCallback(async (emprestimo: Emprestimo) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o empréstimo?\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}`)) return;
+    
+    try {
+      await deleteEmprestimo(String(emprestimo.id));
       setEmprestimosAtivos(prevEmprestimos => prevEmprestimos.filter(e => String(e.id) !== String(emprestimo.id)));
-      console.log('Empréstimo ativo excluído:', emprestimo);
+      showSuccess('Empréstimo excluído com sucesso!');
+    } catch (e: any) {
+      handleError(e, 'Emprestimos - delete');
+      if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao excluir empréstimo');
+      }
     }
-  }, []);
+  }, [showError, showErrorList, showSuccess]);
 
-  const handleDevolver = useCallback((emprestimo: Emprestimo) => {
-    if (window.confirm(`${MESSAGES.CONFIRM_RETURN}\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}\nHorário: ${emprestimo.horario}`)) {
-      // Remove dos ativos e adiciona ao histórico
+  const handleDevolver = useCallback(async (emprestimo: Emprestimo) => {
+    if (!window.confirm(`${MESSAGES.CONFIRM_RETURN}\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}\nHorário: ${emprestimo.horario}`)) return;
+
+    try {
       const horaNow = formatTimeHHMM(new Date());
-      const emprestimoDevolvido = { ...emprestimo, isDevolvido: true, horaDevolucao: horaNow };
+      const payload = {
+        ...emprestimo,
+        isDevolvido: true,
+        horaDevolucao: horaNow
+      };
 
-      setEmprestimosAtivos(prevAtivos => prevAtivos.filter(e => String(e.id) !== String(emprestimo.id)));
-      setHistoricoEmprestimos(prevHistorico => [...prevHistorico, emprestimoDevolvido]);
+      const emprestimoAtualizado = await updateEmprestimo(String(emprestimo.id), payload);
       
-      console.log('Empréstimo devolvido:', emprestimo.id, 'em:', new Date().toISOString());
+      // Remove dos ativos e adiciona ao histórico
+      setEmprestimosAtivos(prevAtivos => prevAtivos.filter(e => String(e.id) !== String(emprestimo.id)));
+      setHistoricoEmprestimos(prevHistorico => [...prevHistorico, emprestimoAtualizado]);
+      
+      showSuccess('Empréstimo devolvido com sucesso!');
+    } catch (e: any) {
+      handleError(e, 'Emprestimos - devolver');
+      if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao devolver empréstimo');
+      }
     }
-  }, []);
+  }, [showError, showErrorList, showSuccess]);
 
   // Handlers para histórico de empréstimos
   const handleDetalhesHistorico = useCallback((emprestimo: Emprestimo) => {
@@ -100,30 +177,75 @@ const Emprestimos: React.FC = () => {
     setIsEditModalOpen(true);
   }, []);
 
-  const handleSalvarEdicao = useCallback((emprestimoAtualizado: Emprestimo) => {
-    // Atualiza no histórico se o empréstimo estiver devolvido
-    if (emprestimoAtualizado.isDevolvido) {
-      setHistoricoEmprestimos(prevHistorico => 
-        prevHistorico.map(e => e.id === emprestimoAtualizado.id ? emprestimoAtualizado : e)
-      );
-    } else {
-      // Atualiza nos ativos se não estiver devolvido
-      setEmprestimosAtivos(prevAtivos => 
-        prevAtivos.map(e => e.id === emprestimoAtualizado.id ? emprestimoAtualizado : e)
-      );
-    }
-    // Atualiza o item selecionado para refletir as mudanças no DetailModal
-    setSelectedEmprestimo(emprestimoAtualizado);
-    console.log('Empréstimo atualizado:', emprestimoAtualizado);
-  }, []);
+  const handleSalvarEdicao = useCallback(async (emprestimoAtualizado: Emprestimo) => {
+    try {
+      // Construir payload para API
+      const payload = {
+        horaEmprestimo: emprestimoAtualizado.horaEmprestimo,
+        horaDevolucao: emprestimoAtualizado.horaDevolucao || null,
+        isDevolvido: emprestimoAtualizado.isDevolvido
+      };
 
-  const handleExcluirHistorico = useCallback((emprestimo: Emprestimo) => {
-    if (window.confirm(`Tem certeza que deseja excluir o empréstimo do histórico?\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}`)) {
-      setHistoricoEmprestimos(prevHistorico => prevHistorico.filter(e => String(e.id) !== String(emprestimo.id)));
-      setIsModalOpen(false); // Fecha o modal após exclusão
-      console.log('Empréstimo do histórico excluído:', emprestimo);
+      const saved = await updateEmprestimo(String(emprestimoAtualizado.id), payload);
+      
+      // Mesclar com dados de exibição
+      const emprestimoFinal = {
+        ...saved,
+        jogo: emprestimoAtualizado.jogo,
+        participante: emprestimoAtualizado.participante,
+        horario: saved.horaEmprestimo
+      };
+
+      // Atualiza no histórico se o empréstimo estiver devolvido
+      if (emprestimoFinal.isDevolvido) {
+        setHistoricoEmprestimos(prevHistorico => 
+          prevHistorico.map(e => e.id === emprestimoFinal.id ? emprestimoFinal : e)
+        );
+        // Remove dos ativos se estava lá
+        setEmprestimosAtivos(prevAtivos => 
+          prevAtivos.filter(e => e.id !== emprestimoFinal.id)
+        );
+      } else {
+        // Atualiza nos ativos se não estiver devolvido
+        setEmprestimosAtivos(prevAtivos => 
+          prevAtivos.map(e => e.id === emprestimoFinal.id ? emprestimoFinal : e)
+        );
+        // Remove do histórico se estava lá
+        setHistoricoEmprestimos(prevHistorico => 
+          prevHistorico.filter(e => e.id !== emprestimoFinal.id)
+        );
+      }
+      
+      // Atualiza o item selecionado para refletir as mudanças no DetailModal
+      setSelectedEmprestimo(emprestimoFinal);
+      showSuccess('Empréstimo atualizado com sucesso!');
+    } catch (e: any) {
+      handleError(e, 'Emprestimos - update');
+      if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao atualizar empréstimo');
+      }
     }
-  }, []);
+  }, [showError, showErrorList, showSuccess]);
+
+  const handleExcluirHistorico = useCallback(async (emprestimo: Emprestimo) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o empréstimo do histórico?\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}`)) return;
+    
+    try {
+      await deleteEmprestimo(String(emprestimo.id));
+      setHistoricoEmprestimos(prevHistorico => prevHistorico.filter(e => String(e.id) !== String(emprestimo.id)));
+      setIsModalOpen(false);
+      showSuccess('Empréstimo excluído com sucesso!');
+    } catch (e: any) {
+      handleError(e, 'Emprestimos - delete histórico');
+      if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao excluir empréstimo');
+      }
+    }
+  }, [showError, showErrorList, showSuccess]);
 
 
 
@@ -143,6 +265,37 @@ const Emprestimos: React.FC = () => {
 
   const countAtivos = emprestimosAtivos.length;
   const countHistorico = historicoEmprestimos.length;
+
+  // Campos de criação com lista de jogos e participantes
+  const emprestimoCreateFieldsWithOptions: CreateField<Emprestimo>[] = useMemo(() => {
+    return emprestimoCreateFields.map(field => {
+      if (field.key === 'jogo') {
+        return {
+          ...field,
+          type: 'autocomplete' as const,
+          dataListId: 'jogos-list',
+          options: jogos.map(jogo => ({
+            value: jogo.nome,
+            label: jogo.nome,
+            searchValue: jogo.codigoDeBarras // Adiciona código de barras para busca
+          }))
+        };
+      }
+      if (field.key === 'participante') {
+        return {
+          ...field,
+          type: 'autocomplete' as const,
+          dataListId: 'participantes-list',
+          options: participantes.map(p => ({
+            value: p.nome,
+            label: p.nome,
+            searchValue: `${p.documento} ${p.ra}` // Adiciona documento e RA para busca
+          }))
+        };
+      }
+      return field;
+    });
+  }, [jogos, participantes]);
 
   return (
     <div className="page-container">
@@ -220,7 +373,7 @@ const Emprestimos: React.FC = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleSalvarCriacao}
-        fields={emprestimoCreateFields}
+        fields={emprestimoCreateFieldsWithOptions}
         title="Registrar Novo Empréstimo"
       />
     </div>

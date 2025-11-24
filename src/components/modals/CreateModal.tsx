@@ -37,7 +37,11 @@ export function CreateModal<T extends { id: number | string }>({
       const initialData: Partial<Omit<T, 'id'>> = {};
       fields.forEach(field => {
         if (field.key !== 'id' && field.defaultValue !== undefined) {
-          initialData[field.key as keyof Omit<T, 'id'>] = field.defaultValue;
+          // Se o defaultValue é uma função, executa para obter valor atualizado
+          const value = typeof field.defaultValue === 'function' 
+            ? field.defaultValue() 
+            : field.defaultValue;
+          initialData[field.key as keyof Omit<T, 'id'>] = value;
         }
       });
       setFormData(initialData);
@@ -113,6 +117,11 @@ export function CreateModal<T extends { id: number | string }>({
     
     const value = formData[field.key as keyof Omit<T, 'id'>];
     const error = errors[field.key as string];
+
+    // Esconde horaDevolucao se isDevolvido não estiver marcado
+    if (field.key === 'horaDevolucao' && !formData['isDevolvido' as keyof Omit<T, 'id'>]) {
+      return null;
+    }
 
     switch (field.type) {
       case 'boolean':
@@ -221,6 +230,11 @@ export function CreateModal<T extends { id: number | string }>({
             <div className="edit-fields">
               {fields.map((field) => {
                 if (field.key === 'id') return null; // Não renderiza campo ID
+                
+                // Esconde horaDevolucao se isDevolvido não estiver marcado
+                if (field.key === 'horaDevolucao' && !formData['isDevolvido' as keyof Omit<T, 'id'>]) {
+                  return null;
+                }
                 
                 return (
                   <div key={field.key as string} className="edit-field">

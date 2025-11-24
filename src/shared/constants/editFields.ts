@@ -208,21 +208,21 @@ export const emprestimoEditFields: EditField<Emprestimo>[] = [
   { 
     key: 'horaEmprestimo', 
     label: 'Hora do Empréstimo', 
-    type: 'text', 
+    type: 'time', 
+    required: true,
     placeholder: '14:30',
     validation: (value: string) => {
-      if (value && !ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
+      if (!value) return 'Horário de empréstimo é obrigatório';
       return null;
     }
   },
   { 
     key: 'horaDevolucao', 
     label: 'Hora da Devolução', 
-    type: 'text', 
+    type: 'time', 
     placeholder: '16:30',
     validation: (value: string) => {
       if (!value) return null; // Campo opcional
-      if (!ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
       return null;
     }
   },

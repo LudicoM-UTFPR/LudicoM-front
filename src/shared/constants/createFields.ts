@@ -200,38 +200,56 @@ export const eventoCreateFields: CreateField<Evento>[] = [
 export const emprestimoCreateFields: CreateField<Emprestimo>[] = [
   { 
     key: 'jogo', 
-    label: 'Nome do Jogo', 
-    type: 'text', 
+    label: 'Jogo', 
+    type: 'autocomplete', 
     required: true,
-    placeholder: 'Nome do jogo a ser emprestado...'
+    placeholder: 'Digite nome ou código de barras...',
+    dataListId: 'jogos-list',
+    validation: (value: string) => {
+      if (!value || value.length < 2) return 'Selecione um jogo';
+      return null;
+    }
   },
   { 
     key: 'participante', 
-    label: 'Nome do Participante', 
-    type: 'text', 
+    label: 'Participante', 
+    type: 'autocomplete', 
     required: true,
-    placeholder: 'Nome do participante...'
+    placeholder: 'Digite nome, documento ou RA...',
+    dataListId: 'participantes-list',
+    validation: (value: string) => {
+      if (!value || value.length < 2) return 'Selecione um participante';
+      return null;
+    }
   },
   { 
     key: 'horaEmprestimo', 
     label: 'Hora do Empréstimo', 
-    type: 'text', 
+    type: 'time', 
     required: true,
-    placeholder: '14:30',
-    defaultValue: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    defaultValue: () => {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    },
     validation: (value: string) => {
-      if (!ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
+      if (!value) return 'Horário de empréstimo é obrigatório';
       return null;
     }
   },
   { 
     key: 'horaDevolucao', 
-    label: 'Hora da Devolução (Opcional)', 
-    type: 'text', 
-    placeholder: '16:30',
+    label: 'Hora da Devolução', 
+    type: 'time',
+    defaultValue: () => {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    },
     validation: (value: string) => {
       if (!value) return null; // Campo opcional
-      if (!ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
       return null;
     }
   },
