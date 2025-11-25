@@ -3,13 +3,13 @@ import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '.
 import { useToast } from '../components/common';
 import { emprestimoDetailFields, emprestimoEditFields, emprestimoCreateFields, MESSAGES, EMPRESTIMO_COLUMNS, EMPRESTIMO_DETAIL_COLUMNS } from '../shared/constants';
 import { useJogos, useParticipantes, useEventos } from '../shared/hooks';
-import { createEmprestimo, updateEmprestimo, deleteEmprestimo, fetchEmprestimos } from '../shared/services/emprestimosService';
+import { createEmprestimo, updateEmprestimo, deleteEmprestimo, fetchEmprestimos, devolverEmprestimo } from '../shared/services/emprestimosService';
 import type { CreateField } from '../components/modals/CreateModal';
 import { handleError, formatTimeHHMM } from '../shared/utils';
 import type { Emprestimo, TableAction } from '../shared/types';
 
 const Emprestimos: React.FC = () => {
-  const { jogos } = useJogos();
+  const { jogos, updateJogo, setDisponibilidadeLocal, refetchJogos } = useJogos();
   const { participantes } = useParticipantes();
   const { eventos } = useEventos();
   const { showErrorList, showError, showSuccess } = useToast();
@@ -19,31 +19,42 @@ const Emprestimos: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     const controller = new AbortController();
     (async () => {
-      try {
-        const fetched = await fetchEmprestimos(controller.signal);
-        // Adiciona campo 'horario' para compatibilidade com tabela
-        const withHorario = fetched.map(e => ({ ...e, horario: e.horaEmprestimo }));
-        const ativos = withHorario.filter(e => !e.isDevolvido);
-        const historico = withHorario.filter(e => e.isDevolvido);
-        if (mounted) {
-          setEmprestimosAtivos(ativos);
-          setHistoricoEmprestimos(historico);
-        }
-      } catch (error) {
-        handleError(error, 'Emprestimos - fetch');
-        showError('Erro ao carregar empréstimos');
+      const fetched = await fetchEmprestimos(controller.signal);
+
+      // Serviço já normaliza nomes; garante fallback às listas locais se vierem vazios.
+      const emprestimosMapeados = fetched.map(emp => {
+        const jogoNome = emp.jogo || jogos.find(j => String(j.id) === String(emp.idJogo))?.nome || 'Jogo não encontrado';
+        const participanteNome = emp.participante || participantes.find(p => String(p.id) === String(emp.idParticipante))?.nome || 'Participante não encontrado';
+        return {
+          ...emp,
+          jogo: jogoNome,
+          participante: participanteNome,
+          horario: emp.horaEmprestimo,
+        } as Emprestimo;
+      });
+      
+      const ativos = emprestimosMapeados.filter(e => !e.isDevolvido);
+      const historico = emprestimosMapeados.filter(e => e.isDevolvido);
+      if (mounted) {
+        setEmprestimosAtivos(ativos);
+        setHistoricoEmprestimos(historico);
       }
     })();
     return () => { mounted = false; controller.abort(); };
-  }, [showError]);
+  }, [jogos, participantes]);
 
   const handleRegistrarEmprestimo = useCallback(() => {
     setIsCreateModalOpen(true);
+  }, []);
+
+  const handleRegistrarDevolucao = useCallback(() => {
+    setIsReturnModalOpen(true);
   }, []);
 
   const handleSalvarCriacao = async (novoEmprestimo: any) => {
@@ -95,6 +106,22 @@ const Emprestimos: React.FC = () => {
       };
 
       const saved = await createEmprestimo(payload);
+
+      // Marca o jogo como indisponível imediatamente (fallback local se remoto falhar)
+      if (updateJogo) {
+        try {
+          const updated = await updateJogo(String(jogoSelecionado.id), { isDisponivel: false });
+          // Se backend não retornou alteração, força local
+          if (updated && updated.isDisponivel) {
+            setDisponibilidadeLocal(String(jogoSelecionado.id), false);
+          }
+        } catch (e) {
+          handleError(e, 'Emprestimos - marcar jogo indisponível (remoto falhou, aplicando local)');
+          setDisponibilidadeLocal(String(jogoSelecionado.id), false);
+        }
+      } else {
+        setDisponibilidadeLocal(String(jogoSelecionado.id), false);
+      }
       
       // Adicionar informações de exibição
       const emprestimoCompleto = {
@@ -128,7 +155,31 @@ const Emprestimos: React.FC = () => {
     
     try {
       await deleteEmprestimo(String(emprestimo.id));
+
+      // Verifica se existem outros empréstimos ativos para o mesmo jogo ANTES de remover
+      const jogoIdRef = String(emprestimo.idJogo || '');
+      const existeOutroAtivoMesmoJogo = emprestimosAtivos.some(e => e.id !== emprestimo.id && !e.isDevolvido && (
+        (jogoIdRef && String(e.idJogo || '') === jogoIdRef) || e.jogo === emprestimo.jogo
+      ));
+
       setEmprestimosAtivos(prevEmprestimos => prevEmprestimos.filter(e => String(e.id) !== String(emprestimo.id)));
+
+      // Se não houver outro empréstimo ativo do mesmo jogo, marca disponibilidade novamente
+      if (!existeOutroAtivoMesmoJogo) {
+        const jogoObj = jogos.find(j => (jogoIdRef && String(j.id) === jogoIdRef) || j.nome === emprestimo.jogo);
+        if (jogoObj) {
+          if (updateJogo) {
+            updateJogo(String(jogoObj.id), { isDisponivel: true })
+              .catch(() => setDisponibilidadeLocal(String(jogoObj.id), true));
+          } else {
+            setDisponibilidadeLocal(String(jogoObj.id), true);
+          }
+        }
+      }
+
+      // Recarrega jogos para atualizar disponibilidade
+      if (refetchJogos) refetchJogos();
+
       showSuccess('Empréstimo excluído com sucesso!');
     } catch (e: any) {
       handleError(e, 'Emprestimos - delete');
@@ -140,33 +191,138 @@ const Emprestimos: React.FC = () => {
     }
   }, [showError, showErrorList, showSuccess]);
 
+  // Modal de devolução manual via código de barras
+  const handleSalvarDevolucao = useCallback(async (form: any) => {
+    try {
+      const jogoSelecionado = jogos.find(j => j.nome === form.jogo);
+      if (!jogoSelecionado) {
+        showError('Jogo não encontrado. Selecione um jogo válido.');
+        return;
+      }
+      if (!jogoSelecionado.codigoDeBarras) {
+        showError('Jogo sem código de barras cadastrado.');
+        return;
+      }
+
+      // Chama API de devolução
+      let remotoAtualizado: Emprestimo | null = null;
+      try {
+        remotoAtualizado = await devolverEmprestimo(String(jogoSelecionado.codigoDeBarras));
+      } catch (e: any) {
+        handleError(e, 'Emprestimos - devolver manual');
+        if (e?.errors) showErrorList(e.errors); else showError(e?.message || 'Erro ao devolver empréstimo');
+        return;
+      }
+
+      // Localiza empréstimo ativo correspondente
+      const jogoIdRef = String(jogoSelecionado.id);
+      const emprestimoAtivo = emprestimosAtivos.find(e => (e.idJogo && String(e.idJogo) === jogoIdRef) || e.jogo === jogoSelecionado.nome);
+      if (!emprestimoAtivo) {
+        showError('Não há empréstimo ativo para este jogo.');
+        return;
+      }
+
+      const horaNow = formatTimeHHMM(new Date());
+      const emprestimoAtualizado: Emprestimo = remotoAtualizado ? {
+        ...emprestimoAtivo,
+        ...remotoAtualizado,
+        isDevolvido: true,
+        horaDevolucao: remotoAtualizado.horaDevolucao || horaNow,
+        horario: emprestimoAtivo.horario
+      } : {
+        ...emprestimoAtivo,
+        isDevolvido: true,
+        horaDevolucao: horaNow
+      };
+
+      // Atualiza listas
+      setEmprestimosAtivos(prev => prev.filter(e => e.id !== emprestimoAtivo.id));
+      setHistoricoEmprestimos(prev => [...prev, emprestimoAtualizado]);
+
+      // Marca jogo disponível
+      if (updateJogo) {
+        updateJogo(String(jogoSelecionado.id), { isDisponivel: true })
+          .catch(() => setDisponibilidadeLocal(String(jogoSelecionado.id), true));
+      } else {
+        setDisponibilidadeLocal(String(jogoSelecionado.id), true);
+      }
+
+      if (refetchJogos) refetchJogos();
+
+      showSuccess('Devolução registrada com sucesso!');
+      setIsReturnModalOpen(false);
+    } catch (e: any) {
+      handleError(e, 'Emprestimos - salvar devolucao manual');
+      if (e?.errors) showErrorList(e.errors); else showError(e?.message || 'Erro ao registrar devolução');
+    }
+  }, [jogos, emprestimosAtivos, updateJogo, setDisponibilidadeLocal, refetchJogos, showError, showErrorList, showSuccess]);
+
   const handleDevolver = useCallback(async (emprestimo: Emprestimo) => {
     if (!window.confirm(`${MESSAGES.CONFIRM_RETURN}\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}\nHorário: ${emprestimo.horario}`)) return;
 
     try {
+      // Localiza jogo para obter código de barras
+      const jogoObj = jogos.find(j => (emprestimo.idJogo && String(j.id) === String(emprestimo.idJogo)) || j.nome === emprestimo.jogo);
+      if (!jogoObj) {
+        showError('Jogo não encontrado na lista local.');
+        return;
+      }
+      if (!jogoObj.codigoDeBarras) {
+        showError('Jogo sem código de barras cadastrado. Não é possível devolver pela API.');
+        return;
+      }
+
+      // Chama endpoint específico de devolução via código de barras
+      let remotoAtualizado: Emprestimo | null = null;
+      try {
+        remotoAtualizado = await devolverEmprestimo(String(jogoObj.codigoDeBarras));
+      } catch (err: any) {
+        if (err?.errors) showErrorList(err.errors); else showError(err?.message || 'Erro ao devolver empréstimo');
+        return; // Aborta fluxo se API falha
+      }
+
       const horaNow = formatTimeHHMM(new Date());
-      const payload = {
+      const emprestimoAtualizado: Emprestimo = remotoAtualizado ? {
+        ...emprestimo,
+        ...remotoAtualizado,
+        isDevolvido: true,
+        horaDevolucao: remotoAtualizado.horaDevolucao || horaNow,
+        horario: emprestimo.horario
+      } : {
         ...emprestimo,
         isDevolvido: true,
         horaDevolucao: horaNow
       };
 
-      const emprestimoAtualizado = await updateEmprestimo(String(emprestimo.id), payload);
-      
-      // Remove dos ativos e adiciona ao histórico
+      // Verifica se existem outros empréstimos ativos para o mesmo jogo ANTES de remover
+      const jogoIdRef = String(emprestimo.idJogo || '');
+      const existeOutroAtivoMesmoJogo = emprestimosAtivos.some(e => e.id !== emprestimo.id && !e.isDevolvido && (
+        (jogoIdRef && String(e.idJogo || '') === jogoIdRef) || e.jogo === emprestimo.jogo
+      ));
+
+      // Move dos ativos para histórico
       setEmprestimosAtivos(prevAtivos => prevAtivos.filter(e => String(e.id) !== String(emprestimo.id)));
       setHistoricoEmprestimos(prevHistorico => [...prevHistorico, emprestimoAtualizado]);
-      
+
+      // Se não houver outro empréstimo ativo do mesmo jogo, marca disponibilidade novamente
+      if (!existeOutroAtivoMesmoJogo) {
+        if (updateJogo) {
+          updateJogo(String(jogoObj.id), { isDisponivel: true })
+            .catch(() => setDisponibilidadeLocal(String(jogoObj.id), true));
+        } else {
+          setDisponibilidadeLocal(String(jogoObj.id), true);
+        }
+      }
+
+      // Recarrega jogos para atualizar disponibilidade
+      if (refetchJogos) refetchJogos();
+
       showSuccess('Empréstimo devolvido com sucesso!');
     } catch (e: any) {
-      handleError(e, 'Emprestimos - devolver');
-      if (e?.errors) {
-        showErrorList(e.errors);
-      } else {
-        showError(e?.message || 'Erro ao devolver empréstimo');
-      }
+      handleError(e, 'Emprestimos - devolver (novo endpoint)');
+      if (e?.errors) showErrorList(e.errors); else showError(e?.message || 'Erro ao devolver empréstimo');
     }
-  }, [showError, showErrorList, showSuccess]);
+  }, [showError, showErrorList, showSuccess, jogos, emprestimosAtivos, updateJogo, setDisponibilidadeLocal, refetchJogos]);
 
   // Handlers para histórico de empréstimos
   const handleDetalhesHistorico = useCallback((emprestimo: Emprestimo) => {
@@ -272,16 +428,14 @@ const Emprestimos: React.FC = () => {
   const emprestimoCreateFieldsWithOptions: CreateField<Emprestimo>[] = useMemo(() => {
     return emprestimoCreateFields.map(field => {
       if (field.key === 'jogo') {
-        // Filtra apenas jogos disponíveis
-        const jogosDisponiveis = jogos.filter(jogo => jogo.isDisponivel);
+        const jogosDisponiveis = jogos.filter(j => j.isDisponivel);
         return {
           ...field,
           type: 'autocomplete' as const,
           dataListId: 'jogos-list',
-          options: jogosDisponiveis.map(jogo => ({
-            value: jogo.nome,
-            label: jogo.nome,
-            searchValue: jogo.codigoDeBarras // Adiciona código de barras para busca
+          options: jogosDisponiveis.map(j => ({
+            value: j.nome,
+            label: j.nome
           }))
         };
       }
@@ -292,14 +446,30 @@ const Emprestimos: React.FC = () => {
           dataListId: 'participantes-list',
           options: participantes.map(p => ({
             value: p.nome,
-            label: p.nome,
-            searchValue: `${p.documento} ${p.ra}` // Adiciona documento e RA para busca
+            label: p.nome
           }))
         };
       }
       return field;
     });
-  }, [jogos, participantes]);
+  }, [jogos, participantes, isCreateModalOpen]);
+
+  // Campos para modal de devolução (lista de jogos atualmente emprestados)
+  const emprestimoReturnFields: CreateField<any>[] = useMemo(() => {
+    const fieldBase = {
+      key: 'jogo',
+      label: 'Jogo',
+      type: 'autocomplete' as const,
+      required: true,
+      placeholder: 'Selecione o jogo emprestado...'
+    };
+    const jogosEmprestados = emprestimosAtivos.map(e => e.jogo);
+    const options = jogos.filter(j => jogosEmprestados.includes(j.nome)).map(j => ({
+      value: j.nome,
+      label: j.nome
+    }));
+    return [ { ...fieldBase, options } ];
+  }, [emprestimosAtivos, jogos, isReturnModalOpen]);
 
   // Calcular evento atual
   const eventoAtualInfo = useMemo(() => {
@@ -350,6 +520,15 @@ const Emprestimos: React.FC = () => {
         buttonText="Registrar Empréstimo"
         onButtonClick={handleRegistrarEmprestimo}
       />
+      <div className="page-actions" style={{ display:'flex', gap:'0.75rem', marginBottom:'1rem' }}>
+        <button
+          type="button"
+          className="btn btn--medium btn--secondary"
+          onClick={handleRegistrarDevolucao}
+        >
+          Registrar Devolução
+        </button>
+      </div>
 
       {/* Abas */}
       <div className="emp-tabs" role="tablist" aria-label="Abas de Empréstimos">
@@ -374,25 +553,35 @@ const Emprestimos: React.FC = () => {
 
       <div className="emp-tab-panel">
         {activeTab === 'ativos' && (
-          <GenericTable<Emprestimo>
-            data={emprestimosAtivos}
-            columns={EMPRESTIMO_COLUMNS}
-            actions={actionsAtivos}
-            searchPlaceholder="Buscar empréstimo ativo..."
-            searchFields={['jogo', 'participante']}
-            tableTitle="Empréstimos Ativos"
-          />
+          <>
+            <GenericTable<Emprestimo>
+              data={emprestimosAtivos}
+              columns={EMPRESTIMO_COLUMNS}
+              actions={actionsAtivos}
+              searchPlaceholder="Buscar empréstimo ativo..."
+              searchFields={['jogo', 'participante']}
+              tableTitle="Empréstimos Ativos"
+            />
+            {emprestimosAtivos.length === 0 && (
+              <p className="empty-message" role="status">Nenhum empréstimo encontrado.</p>
+            )}
+          </>
         )}
 
         {activeTab === 'historico' && (
-          <GenericTable<Emprestimo>
-            data={historicoEmprestimos}
-            columns={EMPRESTIMO_DETAIL_COLUMNS}
-            actions={actionsHistorico}
-            searchPlaceholder="Buscar no histórico..."
-            searchFields={['jogo', 'participante']}
-            tableTitle="Histórico de Empréstimos"
-          />
+          <>
+            <GenericTable<Emprestimo>
+              data={historicoEmprestimos}
+              columns={EMPRESTIMO_DETAIL_COLUMNS}
+              actions={actionsHistorico}
+              searchPlaceholder="Buscar no histórico..."
+              searchFields={['jogo', 'participante']}
+              tableTitle="Histórico de Empréstimos"
+            />
+            {historicoEmprestimos.length === 0 && (
+              <p className="empty-message" role="status">Nenhum empréstimo encontrado.</p>
+            )}
+          </>
         )}
       </div>
       
@@ -422,6 +611,13 @@ const Emprestimos: React.FC = () => {
         fields={emprestimoCreateFieldsWithOptions}
         title="Registrar Novo Empréstimo"
         infoMessage={eventoAtualInfo}
+      />
+      <CreateModal
+        isOpen={isReturnModalOpen}
+        onClose={() => setIsReturnModalOpen(false)}
+        onSave={handleSalvarDevolucao}
+        fields={emprestimoReturnFields}
+        title="Registrar Devolução"
       />
     </div>
   );

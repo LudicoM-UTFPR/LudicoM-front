@@ -16,21 +16,44 @@ export async function fetchEmprestimos(signal?: AbortSignal): Promise<Emprestimo
     const json = await res.json();
     // Validação e normalização conforme schema atualizado
     let normalized = json;
+    
+    // Se não for array, retorna vazio
+    if (!Array.isArray(json)) {
+      return [];
+    }
+    
+    // Se array vazio, retorna vazio
+    if (json.length === 0) {
+      return [];
+    }
+    
     if (
-      Array.isArray(json) &&
-      json.length > 0 &&
       json[0] &&
       Object.prototype.hasOwnProperty.call(json[0], "uid") &&
       !Object.prototype.hasOwnProperty.call(json[0], "id")
     ) {
       // Use o uid do backend como id (UUID) para compatibilidade total
-      normalized = json.map((item: any) => ({
-        ...item,
-        id: String(item.uid),
-        uid: item.uid,
-        horaEmprestimo: item.horaEmprestimo ? String(item.horaEmprestimo).substring(0, 5) : '',
-        horaDevolucao: item.horaDevolucao ? String(item.horaDevolucao).substring(0, 5) : null,
-      }));
+      normalized = json.map((item: any) => {
+        const jogoObj = item.jogo;
+        const participanteObj = item.participante;
+        const eventoObj = item.evento;
+        const horaEmp = item.horaEmprestimo ? String(item.horaEmprestimo).substring(0, 5) : '';
+        const horaDev = item.horaDevolucao ? String(item.horaDevolucao).substring(0, 5) : null;
+        
+        return {
+          ...item,
+          id: String(item.uid),
+          uid: item.uid,
+          idJogo: item.idJogo || (jogoObj?.uid ? String(jogoObj.uid) : undefined),
+          idParticipante: item.idParticipante || (participanteObj?.uid ? String(participanteObj.uid) : undefined),
+          idEvento: item.idEvento || (eventoObj?.uid ? String(eventoObj.uid) : undefined),
+          jogo: jogoObj?.nome || item.jogo || '',
+          participante: participanteObj?.nome || item.participante || '',
+          horario: horaEmp,
+          horaEmprestimo: horaEmp,
+          horaDevolucao: horaDev,
+        };
+      });
     }
     const validated: Emprestimo[] = validateEntityData<Emprestimo>(
       normalized,
@@ -38,8 +61,9 @@ export async function fetchEmprestimos(signal?: AbortSignal): Promise<Emprestimo
     );
     return validated;
   } catch (e) {
-    handleError(e, "emprestimosService.fetchEmprestimos");
-    throw e;
+    handleError(e, "emprestimosService.fetchEmprestimos (retornando array vazio)");
+    // Retorna array vazio ao invés de propagar erro, permitindo UI funcionar
+    return [];
   }
 }
 
@@ -147,6 +171,45 @@ export async function deleteEmprestimo(id: string): Promise<void> {
     }
   } catch (e) {
     handleError(e, "emprestimosService.deleteEmprestimo");
+    throw e;
+  }
+}
+
+// Endpoint específico para devolver empréstimo via código de barras do jogo
+// POST /emprestimo/devolver { codigoDeBarras: string }
+export async function devolverEmprestimo(codigoDeBarras: string): Promise<Emprestimo | null> {
+  const url = `${ENDPOINT}/devolver`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ codigoDeBarras })
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok) {
+      if (json && json.errors) {
+        const error: any = new Error(json.message || 'Erro ao devolver empréstimo');
+        error.errors = json.errors;
+        error.status = res.status;
+        throw error;
+      }
+      throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+    }
+    if (!json) return null;
+    // Tenta normalizar se vier estrutura semelhante às demais
+    let normalized = json;
+    if (json.uid && !json.id) {
+      normalized = { ...json, id: String(json.uid) };
+    }
+    try {
+      const validated = validateEntityData<Emprestimo>([normalized], ENTITY_SCHEMAS.emprestimo as any)[0];
+      return validated;
+    } catch {
+      // Se não conseguir validar, retorna null para tratamento local
+      return null;
+    }
+  } catch (e) {
+    handleError(e, 'emprestimosService.devolverEmprestimo');
     throw e;
   }
 }

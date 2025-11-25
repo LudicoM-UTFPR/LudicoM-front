@@ -221,13 +221,40 @@ export function useJogos() {
     }
   }
 
+  // Atualiza disponibilidade localmente (fallback quando update remoto falha ou para efeito imediato)
+  function setDisponibilidadeLocal(id: string, disponivel: boolean) {
+    setJogos(prev => {
+      const next = prev.map(j => String(j.id) === String(id) ? { ...j, isDisponivel: disponivel } : j);
+      try {
+        sessionStorage.setItem('ludicom:jogos:cache', JSON.stringify({ data: next, timestamp: Date.now() }));
+      } catch {}
+      return next;
+    });
+  }
+
+  // Força recarga de jogos do backend (ignora cache)
+  async function refetchJogos(): Promise<void> {
+    try {
+      const fetched = await fetchJogos();
+      const validated = validateEntityData<Jogo>(fetched as any, ENTITY_SCHEMAS.jogo as any);
+      setJogos(validated);
+      try {
+        sessionStorage.setItem('ludicom:jogos:cache', JSON.stringify({ data: validated, timestamp: Date.now() }));
+      } catch {}
+    } catch (e) {
+      handleError(e, 'useJogos - refetchJogos');
+    }
+  }
+
   return {
     jogos,
     loading,
     error,
     createJogo: createRemoteJogo,
     updateJogo: updateRemoteJogo,
-    deleteJogo: deleteRemoteJogo
+    deleteJogo: deleteRemoteJogo,
+    setDisponibilidadeLocal,
+    refetchJogos
   };
 }
 
