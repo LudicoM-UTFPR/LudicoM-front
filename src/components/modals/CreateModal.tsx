@@ -23,6 +23,8 @@ export interface CreateModalProps<T> {
   inlineFieldActions?: Record<string, { label?: string; title?: string; icon?: React.ReactNode; onClick: () => void }>;
   // Prefill externo: quando muda, mescla valores no form sem reinicializar tudo
   prefill?: Partial<Omit<T, 'id'>>;
+  // Mensagem informativa no topo do modal (ex: evento atual)
+  infoMessage?: string | React.ReactNode;
 }
 
 export function CreateModal<T extends { id: number | string }>({ 
@@ -32,10 +34,23 @@ export function CreateModal<T extends { id: number | string }>({
   fields, 
   title = 'Criar Novo Item',
   inlineFieldActions,
-  prefill
+  prefill,
+  infoMessage
 }: CreateModalProps<T>) {
   const [formData, setFormData] = useState<Partial<Omit<T, 'id'>>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Bloqueia scroll da página quando modal está aberto
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   // Inicializa o formulário com valores padrão quando abre
   useEffect(() => {
@@ -43,7 +58,11 @@ export function CreateModal<T extends { id: number | string }>({
       const initialData: Partial<Omit<T, 'id'>> = {};
       fields.forEach(field => {
         if (field.key !== 'id' && field.defaultValue !== undefined) {
-          initialData[field.key as keyof Omit<T, 'id'>] = field.defaultValue;
+          // Se o defaultValue é uma função, executa para obter valor atualizado
+          const value = typeof field.defaultValue === 'function' 
+            ? field.defaultValue() 
+            : field.defaultValue;
+          initialData[field.key as keyof Omit<T, 'id'>] = value;
         }
       });
       // Aplica prefill inicial (se vier junto na primeira abertura)
@@ -115,9 +134,10 @@ export function CreateModal<T extends { id: number | string }>({
     
     if (validateForm()) {
       onSave(formData as Omit<T, 'id'>);
-      onClose();
-      // Limpa o formulário após salvar
-      setFormData({});
+      // Não fecha mais automaticamente - deixa o handler da página controlar
+      // onClose();
+      // Não limpa mais o formulário aqui - será limpo quando reabrir o modal
+      // setFormData({});
     }
   };
 
@@ -133,6 +153,11 @@ export function CreateModal<T extends { id: number | string }>({
     const value = formData[field.key as keyof Omit<T, 'id'>];
     const error = errors[field.key as string];
     const action = inlineFieldActions && inlineFieldActions[field.key as string];
+
+    // Esconde horaDevolucao se isDevolvido não estiver marcado
+    if (field.key === 'horaDevolucao' && !formData['isDevolvido' as keyof Omit<T, 'id'>]) {
+      return null;
+    }
 
     switch (field.type) {
       case 'boolean':
@@ -320,11 +345,30 @@ export function CreateModal<T extends { id: number | string }>({
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="edit-modal-form">
-          <div className="modal-content">
+        <div className="modal-content">
+          <form id="create-modal-form" onSubmit={handleSubmit} className="edit-modal-form">
+            {infoMessage && (
+              <div className="modal-info-message" style={{
+                padding: '12px 16px',
+                marginBottom: '20px',
+                backgroundColor: '#e3f2fd',
+                border: '1px solid #2196f3',
+                borderRadius: '6px',
+                color: '#1565c0',
+                fontSize: '14px',
+                lineHeight: '1.5'
+              }}>
+                {infoMessage}
+              </div>
+            )}
             <div className="edit-fields">
               {fields.map((field) => {
                 if (field.key === 'id') return null; // Não renderiza campo ID
+                
+                // Esconde horaDevolucao se isDevolvido não estiver marcado
+                if (field.key === 'horaDevolucao' && !formData['isDevolvido' as keyof Omit<T, 'id'>]) {
+                  return null;
+                }
                 
                 return (
                   <div key={field.key as string} className="edit-field">
@@ -346,26 +390,27 @@ export function CreateModal<T extends { id: number | string }>({
                 );
               })}
             </div>
+          </form>
+        </div>
+        
+        <div className="modal-footer">
+          <div className="acoes-grupo">
+            <button 
+              type="button"
+              className="action-btn action-btn--secondary" 
+              onClick={onClose}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit"
+              form="create-modal-form"
+              className="action-btn action-btn--primary"
+            >
+              Criar
+            </button>
           </div>
-          
-          <div className="modal-footer">
-            <div className="acoes-grupo">
-              <button 
-                type="button"
-                className="action-btn action-btn--secondary" 
-                onClick={onClose}
-              >
-                Cancelar
-              </button>
-              <button 
-                type="submit"
-                className="action-btn action-btn--primary"
-              >
-                Criar
-              </button>
-            </div>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -98,6 +98,7 @@ const Eventos: React.FC = () => {
         } as Evento;
         setEventos(prev => prev.map(e => e.id === eventoFinal.id ? eventoFinal : e));
         showSuccess('Evento atualizado com sucesso!');
+        closeEditModal(); // Fecha apenas em caso de sucesso
       }
     } catch (e: any) {
       handleError(e, 'Eventos - update');
@@ -143,8 +144,10 @@ const Eventos: React.FC = () => {
         
         setEventos(prev => [...prev, eventoComInstituicao]);
         showSuccess('Evento criado com sucesso!');
+        closeCreateModal(); // Fecha apenas em caso de sucesso
       } else {
         localSalvarCriacao(novo);
+        closeCreateModal(); // Fecha também para fallback local
       }
     } catch (e: any) {
       handleError(e, 'Eventos - create');

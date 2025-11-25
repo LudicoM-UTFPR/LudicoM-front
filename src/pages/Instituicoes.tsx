@@ -88,6 +88,7 @@ const Instituicoes: React.FC = () => {
       const saved = await updateInstituicao(selected.uid, payload);
       setInstituicoes(prev => prev.map(i => i.id === selected.id ? { ...saved, id: saved.uid } : i));
       showSuccess('Instituição atualizada com sucesso!');
+      closeEditModal(); // Fecha apenas em caso de sucesso
     } catch (e: any) {
       if (e?.status === 409) {
         if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito ao atualizar instituição.');
@@ -115,10 +116,12 @@ const Instituicoes: React.FC = () => {
         const saved = await createInstituicao({ nome: novo.nome || '', endereco: novo.endereco || '' });
         setInstituicoes(prev => [...prev, { ...saved, id: saved.uid }]);
         showSuccess('Instituição criada com sucesso!');
+        closeCreateModal(); // Fecha apenas em caso de sucesso
       } else {
         // modo offline
         localSalvarCriacao(novo);
         showSuccess('Instituição criada localmente (modo offline).');
+        closeCreateModal(); // Fecha também para fallback local
       }
     } catch (e: any) {
       if (e?.status === 409) {

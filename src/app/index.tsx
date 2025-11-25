@@ -11,7 +11,9 @@ if (!container) {
 const root = createRoot(container);
 
 root.render(
-    <React.StrictMode>
+    // StrictMode desabilitado para evitar dupla montagem que causa requisições canceladas
+    // Em desenvolvimento, ele força remontagem de componentes para detectar efeitos colaterais
+    // <React.StrictMode>
         <App />
-    </React.StrictMode>
+    // </React.StrictMode>
 );
