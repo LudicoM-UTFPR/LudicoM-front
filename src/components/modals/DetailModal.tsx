@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 export interface DetailField<T> {
   key: keyof T;
@@ -26,6 +26,18 @@ export function DetailModal<T>({
   onEdit,
   onDelete
 }: DetailModalProps<T>) {
+  // Bloqueia scroll da página quando modal está aberto
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen || !item) return null;
 
   const formatValue = (field: DetailField<T>, value: T[keyof T], item: T) => {

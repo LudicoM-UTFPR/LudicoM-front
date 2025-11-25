@@ -32,6 +32,18 @@ export function EditModal<T extends { id: number | string }>({
   const [formData, setFormData] = useState<Partial<T>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Bloqueia scroll da página quando modal está aberto
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   // Inicializa o formulário quando o item muda
   useEffect(() => {
     if (item) {
@@ -217,8 +229,8 @@ export function EditModal<T extends { id: number | string }>({
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="edit-modal-form">
-          <div className="modal-content">
+        <div className="modal-content">
+          <form id="edit-modal-form" onSubmit={handleSubmit} className="edit-modal-form">
             <div className="edit-fields">
               {fields.map((field) => (
                 <div key={field.key as string} className="edit-field">
@@ -239,26 +251,27 @@ export function EditModal<T extends { id: number | string }>({
                 </div>
               ))}
             </div>
+          </form>
+        </div>
+        
+        <div className="modal-footer">
+          <div className="acoes-grupo">
+            <button 
+              type="button"
+              className="btn btn--medium btn--ghost" 
+              onClick={onClose}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit"
+              form="edit-modal-form"
+              className="btn btn--medium btn--primary"
+            >
+              Salvar
+            </button>
           </div>
-          
-          <div className="modal-footer">
-            <div className="acoes-grupo">
-              <button 
-                type="button"
-                className="btn btn--medium btn--ghost" 
-                onClick={onClose}
-              >
-                Cancelar
-              </button>
-              <button 
-                type="submit"
-                className="btn btn--medium btn--primary"
-              >
-                Salvar
-              </button>
-            </div>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );
