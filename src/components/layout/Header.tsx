@@ -8,6 +8,7 @@ const Header: React.FC = () => {
     const location = useLocation();
     const headerRef = useScrollVisibility(UI_CONSTANTS.SCROLL_THRESHOLD);
     const [isDarkTheme, setIsDarkTheme] = useState<boolean>(true);
+    const [logoSrc, setLogoSrc] = useState<string>('/logo.svg');
 
     // Carrega o tema salvo no localStorage ao iniciar
     useEffect(() => {
@@ -15,6 +16,7 @@ const Header: React.FC = () => {
         const isDark = savedTheme !== 'light';
         setIsDarkTheme(isDark);
         document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        setLogoSrc(isDark ? '/logo.svg' : '/logo-claro.svg');
     }, []);
 
     const handleLoginClick = useCallback((): void => {
@@ -27,6 +29,7 @@ const Header: React.FC = () => {
         const theme = newTheme ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
+        setLogoSrc(newTheme ? '/logo.svg' : '/logo-claro.svg');
     }, [isDarkTheme]);
 
     const isActive = useCallback((path: string): boolean => {
@@ -39,7 +42,7 @@ const Header: React.FC = () => {
         <header ref={headerRef} className="header">
             <div className="header-container">
                 <Link to={ROUTES.HOME} className="logo">
-                    <img src="/logo.svg" alt="LudicoM Logo" />
+                    <img src={logoSrc} alt="LudicoM Logo" />
                 </Link>
 
                 <nav className="nav">
