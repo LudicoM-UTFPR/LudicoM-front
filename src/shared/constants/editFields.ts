@@ -203,16 +203,18 @@ export const emprestimoEditFields: EditField<Emprestimo>[] = [
   { 
     key: 'jogo', 
     label: 'Nome do Jogo', 
-    type: 'text', 
+    type: 'autocomplete', 
     required: true,
-    placeholder: 'Nome do jogo emprestado...'
+    placeholder: 'Digite nome ou código de barras...',
+    dataListId: 'jogos-list-edit'
   },
   { 
     key: 'participante', 
     label: 'Nome do Participante', 
-    type: 'text', 
+    type: 'autocomplete', 
     required: true,
-    placeholder: 'Nome do participante...'
+    placeholder: 'Digite nome, documento ou RA...',
+    dataListId: 'participantes-list-edit'
   },
   { 
     key: 'horaEmprestimo', 

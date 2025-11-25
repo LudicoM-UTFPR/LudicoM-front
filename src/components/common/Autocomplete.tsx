@@ -48,7 +48,7 @@ export function Autocomplete({ value, onChange, options, placeholder, className 
   };
 
   const handleOptionClick = (option: AutocompleteOption) => {
-    onChange(option.label);
+    onChange(String(option.value));
     setIsOpen(false);
   };
 

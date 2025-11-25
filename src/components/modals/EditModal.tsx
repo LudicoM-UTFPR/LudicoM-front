@@ -100,7 +100,8 @@ export function EditModal<T extends { id: number | string }>({
     
     if (validateForm()) {
       onSave(formData as T);
-      onClose();
+      // Não fecha mais automaticamente - deixa o handler da página controlar
+      // onClose();
     }
   };
 

@@ -122,9 +122,10 @@ export function CreateModal<T extends { id: number | string }>({
     
     if (validateForm()) {
       onSave(formData as Omit<T, 'id'>);
-      onClose();
-      // Limpa o formulário após salvar
-      setFormData({});
+      // Não fecha mais automaticamente - deixa o handler da página controlar
+      // onClose();
+      // Não limpa mais o formulário aqui - será limpo quando reabrir o modal
+      // setFormData({});
     }
   };
 

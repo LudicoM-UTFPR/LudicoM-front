@@ -5,6 +5,7 @@ import { emprestimoDetailFields, emprestimoEditFields, emprestimoCreateFields, M
 import { useJogos, useParticipantes, useEventos } from '../shared/hooks';
 import { createEmprestimo, updateEmprestimo, deleteEmprestimo, fetchEmprestimos, devolverEmprestimo } from '../shared/services/emprestimosService';
 import type { CreateField } from '../components/modals/CreateModal';
+import type { EditField } from '../components/modals/EditModal';
 import { handleError, formatTimeHHMM } from '../shared/utils';
 import type { Emprestimo, TableAction } from '../shared/types';
 
@@ -138,7 +139,7 @@ const Emprestimos: React.FC = () => {
       }
       
       showSuccess('Empréstimo registrado com sucesso!');
-      setIsCreateModalOpen(false);
+      setIsCreateModalOpen(false); // Fecha apenas em caso de sucesso
     } catch (e: any) {
       handleError(e, 'Emprestimos - create');
       if (e?.errors) {
@@ -250,7 +251,7 @@ const Emprestimos: React.FC = () => {
       if (refetchJogos) refetchJogos();
 
       showSuccess('Devolução registrada com sucesso!');
-      setIsReturnModalOpen(false);
+      setIsReturnModalOpen(false); // Fecha apenas em caso de sucesso
     } catch (e: any) {
       handleError(e, 'Emprestimos - salvar devolucao manual');
       if (e?.errors) showErrorList(e.errors); else showError(e?.message || 'Erro ao registrar devolução');
@@ -337,8 +338,45 @@ const Emprestimos: React.FC = () => {
 
   const handleSalvarEdicao = useCallback(async (emprestimoAtualizado: Emprestimo) => {
     try {
-      // Construir payload para API
+      // Encontrar jogo e participante pelos nomes para pegar os IDs
+      const jogoSelecionado = jogos.find(j => j.nome === emprestimoAtualizado.jogo);
+      const participanteSelecionado = participantes.find(p => p.nome === emprestimoAtualizado.participante);
+
+      if (!jogoSelecionado) {
+        showError('Jogo não encontrado. Selecione um jogo válido.');
+        return;
+      }
+
+      if (!participanteSelecionado) {
+        showError('Participante não encontrado. Selecione um participante válido.');
+        return;
+      }
+
+      // Encontrar evento atual (o mesmo que foi usado na criação)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const eventoAtual = eventos.find(ev => {
+        const evData = String(ev.data).startsWith(todayStr) || String(ev.data) === todayStr;
+        const inicioOk = !ev.horaInicio || currentTime >= String(ev.horaInicio).substring(0, 5);
+        const fimOk = !ev.horaFim || currentTime <= String(ev.horaFim).substring(0, 5);
+        return evData && inicioOk && fimOk;
+      });
+
+      if (!eventoAtual) {
+        showError('Nenhum evento ativo encontrado para o horário atual.');
+        return;
+      }
+
+      // Construir payload para API com IDs
       const payload = {
+        idJogo: jogoSelecionado.id,
+        idParticipante: participanteSelecionado.id,
+        idEvento: eventoAtual.id,
         horaEmprestimo: emprestimoAtualizado.horaEmprestimo,
         horaDevolucao: emprestimoAtualizado.horaDevolucao || null,
         isDevolvido: emprestimoAtualizado.isDevolvido
@@ -377,6 +415,7 @@ const Emprestimos: React.FC = () => {
       // Atualiza o item selecionado para refletir as mudanças no DetailModal
       setSelectedEmprestimo(emprestimoFinal);
       showSuccess('Empréstimo atualizado com sucesso!');
+      setIsEditModalOpen(false); // Fecha apenas em caso de sucesso
     } catch (e: any) {
       handleError(e, 'Emprestimos - update');
       if (e?.errors) {
@@ -385,7 +424,7 @@ const Emprestimos: React.FC = () => {
         showError(e?.message || 'Erro ao atualizar empréstimo');
       }
     }
-  }, [showError, showErrorList, showSuccess]);
+  }, [jogos, participantes, eventos, showError, showErrorList, showSuccess]);
 
   const handleExcluirHistorico = useCallback(async (emprestimo: Emprestimo) => {
     if (!window.confirm(`Tem certeza que deseja excluir o empréstimo do histórico?\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}`)) return;
@@ -435,7 +474,7 @@ const Emprestimos: React.FC = () => {
           dataListId: 'jogos-list',
           options: jogosDisponiveis.map(j => ({
             value: j.nome,
-            label: j.nome
+            label: `${j.nome}${j.codigoDeBarras ? ` (${j.codigoDeBarras})` : ''}`
           }))
         };
       }
@@ -446,13 +485,38 @@ const Emprestimos: React.FC = () => {
           dataListId: 'participantes-list',
           options: participantes.map(p => ({
             value: p.nome,
-            label: p.nome
+            label: `${p.nome}${p.documento ? ` (${p.documento})` : ''}${p.ra ? ` - RA: ${p.ra}` : ''}`
           }))
         };
       }
       return field;
     });
   }, [jogos, participantes, isCreateModalOpen]);
+
+  // Campos de edição com lista de jogos e participantes
+  const emprestimoEditFieldsWithOptions: EditField<Emprestimo>[] = useMemo(() => {
+    return emprestimoEditFields.map(field => {
+      if (field.key === 'jogo') {
+        return {
+          ...field,
+          options: jogos.map(j => ({
+            value: j.nome,
+            label: `${j.nome}${j.codigoDeBarras ? ` (${j.codigoDeBarras})` : ''}`
+          }))
+        };
+      }
+      if (field.key === 'participante') {
+        return {
+          ...field,
+          options: participantes.map(p => ({
+            value: p.nome,
+            label: `${p.nome}${p.documento ? ` (${p.documento})` : ''}${p.ra ? ` - RA: ${p.ra}` : ''}`
+          }))
+        };
+      }
+      return field;
+    });
+  }, [jogos, participantes, isEditModalOpen]);
 
   // Campos para modal de devolução (lista de jogos atualmente emprestados)
   const emprestimoReturnFields: CreateField<any>[] = useMemo(() => {
@@ -600,7 +664,7 @@ const Emprestimos: React.FC = () => {
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleSalvarEdicao}
         item={selectedEmprestimo}
-        fields={emprestimoEditFields}
+        fields={emprestimoEditFieldsWithOptions}
         title="Editar Empréstimo"
       />
 
