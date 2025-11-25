@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { handleError, generateId } from '../utils';
 import { validateEntityData, ENTITY_SCHEMAS } from '../utils';
 import { fetchJogos, createJogo, updateJogo, deleteJogo } from '../services/jogosService';
@@ -12,20 +12,30 @@ import { fetchParticipantes, createParticipante, updateParticipante, deleteParti
  * Carrega, valida e fornece operações CRUD para diferentes tipos de dados
  */
 
+// Flag global para evitar múltiplas requisições simultâneas durante StrictMode
+const fetchingStates = new Map<string, boolean>();
+
 // Hook para participantes
 export function useParticipantes() {
   const [participantes, setParticipantes] = useState<Participante[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    const fetchKey = 'participantes';
     let isMounted = true;
-    const controller = new AbortController();
 
     (async () => {
+      // Verifica flag global para evitar requisições duplicadas
+      if (fetchingStates.get(fetchKey)) return;
+      fetchingStates.set(fetchKey, true);
+      
+      controllerRef.current = new AbortController();
+      
       try {
         setLoading(true);
-        const fetched = await fetchParticipantes(controller.signal);
+        const fetched = await fetchParticipantes(controllerRef.current.signal);
         const validated = validateEntityData<Participante>(fetched as any, ENTITY_SCHEMAS.participante as any);
         if (isMounted) {
           setParticipantes(validated);
@@ -37,12 +47,13 @@ export function useParticipantes() {
         if (isMounted) setError('Erro ao carregar participantes');
       } finally {
         if (isMounted) setLoading(false);
+        fetchingStates.delete(fetchKey);
       }
     })();
 
     return () => {
       isMounted = false;
-      controller.abort();
+      // Não aborta para permitir que a requisição complete
     };
   }, []);
 
@@ -89,12 +100,12 @@ export function useJogos() {
   const [jogos, setJogos] = useState<Jogo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     const cacheKey = 'ludicom:jogos:cache';
-    const TTL = 1000 * 60 * 5; // 5 minutos
-    const controller = new AbortController();
+    const TTL = 1000 * 60 * 5; // 5 minutos;
 
     const setStateSafe = (data: Jogo[]) => {
       if (!isMounted) return;
@@ -123,18 +134,23 @@ export function useJogos() {
     };
 
     const doFetch = async (signal?: AbortSignal, updateState = true) => {
+      const fetchKey = 'jogos';
+      if (fetchingStates.get(fetchKey)) return;
+      fetchingStates.set(fetchKey, true);
+      
       try {
         const fetched = await fetchJogos(signal);
         // validateEntityData is already used by service, but keep final normalization here
         const validated = validateEntityData<Jogo>(fetched as any, ENTITY_SCHEMAS.jogo as any);
         saveToCache(validated);
-        if (updateState) setStateSafe(validated);
+        if (updateState && isMounted) setStateSafe(validated);
       } catch (err) {
         if ((err as any)?.name === 'AbortError') return;
         handleError(err, 'useJogos - fetch');
         if (isMounted) setError('Erro ao carregar jogos');
       } finally {
         if (isMounted) setLoading(false);
+        fetchingStates.delete(fetchKey);
       }
     };
 
@@ -143,19 +159,19 @@ export function useJogos() {
         // Primeiro, tenta usar cache
         const cached = loadFromCache();
         if (cached) {
-          setStateSafe(cached.data);
-          // Se estiver fresco, não precisa aguardar; mas sempre revalida em background se estiver stale
           const age = Date.now() - cached.timestamp;
+          setStateSafe(cached.data);
+          
+          // Se estiver fresco, apenas exibe cache e finaliza
           if (age < TTL) {
             setLoading(false);
-            // Revalidação opcional em background (não atualiza estado imediatamente)
-            doFetch(controller.signal, false).catch(() => {});
             return;
           }
         }
 
         // Sem cache ou cache stale -> busca e atualiza estado
-        await doFetch(controller.signal, true);
+        controllerRef.current = new AbortController();
+        await doFetch(controllerRef.current.signal, true);
       } catch (e) {
         handleError(e, 'useJogos - outer');
         if (isMounted) setError('Erro ao carregar jogos');
@@ -165,7 +181,7 @@ export function useJogos() {
 
     return () => {
       isMounted = false;
-      controller.abort();
+      // Não aborta para permitir que a requisição complete
     };
   }, []);
 
@@ -263,15 +279,22 @@ export function useEventos() {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    const fetchKey = 'eventos';
     let isMounted = true;
-    const controller = new AbortController();
 
     (async () => {
+      // Verifica flag global para evitar requisições duplicadas
+      if (fetchingStates.get(fetchKey)) return;
+      fetchingStates.set(fetchKey, true);
+      
+      controllerRef.current = new AbortController();
+      
       try {
         setLoading(true);
-        const fetched = await fetchEventos(controller.signal);
+        const fetched = await fetchEventos(controllerRef.current.signal);
         const validated = validateEntityData<Evento>(fetched as any, ENTITY_SCHEMAS.evento as any);
         if (isMounted) {
           setEventos(validated);
@@ -283,12 +306,13 @@ export function useEventos() {
         if (isMounted) setError('Erro ao carregar eventos');
       } finally {
         if (isMounted) setLoading(false);
+        fetchingStates.delete(fetchKey);
       }
     })();
 
     return () => {
       isMounted = false;
-      controller.abort();
+      // Não aborta para permitir que a requisição complete
     };
   }, []);
 
@@ -327,76 +351,135 @@ export function useEventos() {
     }
   }
 
+  // Força recarga de eventos do backend
+  async function refetchEventos(): Promise<void> {
+    try {
+      const fetched = await fetchEventos();
+      const validated = validateEntityData<Evento>(fetched as any, ENTITY_SCHEMAS.evento as any);
+      setEventos(validated);
+    } catch (e) {
+      handleError(e, 'useEventos - refetchEventos');
+    }
+  }
+
   return {
     eventos,
     loading,
     error,
     createEvento: createRemoteEvento,
     updateEvento: updateRemoteEvento,
-    deleteEvento: deleteRemoteEvento
+    deleteEvento: deleteRemoteEvento,
+    refetchEventos
   };
 }
 
-// Hook para empréstimos
+// Hook para empréstimos com cache
 export function useEmprestimos() {
-  const [emprestimosAtivos, setEmprestimosAtivos] = useState<Emprestimo[]>([]);
-  const [historicoEmprestimos, setHistoricoEmprestimos] = useState<Emprestimo[]>([]);
+  const [emprestimos, setEmprestimos] = useState<Emprestimo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    const loadEmprestimos = async () => {
+    const fetchKey = 'emprestimos';
+    let isMounted = true;
+    const cacheKey = 'ludicom:emprestimos:cache';
+    const TTL = 1000 * 60 * 2; // 2 minutos (cache mais curto para dados que mudam frequentemente)
+
+    const setStateSafe = (data: Emprestimo[]) => {
+      if (!isMounted) return;
+      setEmprestimos(data);
+      setError(null);
+    };
+
+    const loadFromCache = (): { data: Emprestimo[]; timestamp: number } | null => {
       try {
-        setLoading(true);
-        const emprestimosData = await import('../data/emprestimos.json');
-        
-        // Validação e processamento dos dados (similar ao código da página Emprestimos)
-        const allValidatedData = emprestimosData.default.map((item): Emprestimo => ({
-          id: String(item.id),
-          idJogo: String(item.idJogo),
-          idParticipante: String(item.idParticipante),
-          idEvento: String(item.idEvento),
-          horaEmprestimo: String(item.horaEmprestimo || ''),
-          horaDevolucao: item.horaDevolucao ? String(item.horaDevolucao) : null,
-          isDevolvido: Boolean(item.isDevolvido),
-          jogo: String(item.jogo || ""),
-          participante: String(item.participante || ""),
-          horario: String(item.horario || "")
-        }));
-
-        const ativos = allValidatedData.filter(item => !item.isDevolvido);
-        const historico = allValidatedData.filter(item => item.isDevolvido);
-
-        setEmprestimosAtivos(ativos);
-        setHistoricoEmprestimos(historico);
-        setError(null);
-      } catch (error) {
-        const errorMessage = 'Erro ao carregar empréstimos';
-        handleError(error, "useEmprestimos - Data Loading");
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
+        const raw = sessionStorage.getItem(cacheKey);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.data) || typeof parsed.timestamp !== 'number') return null;
+        return parsed;
+      } catch {
+        return null;
       }
     };
 
-    loadEmprestimos();
+    const saveToCache = (data: Emprestimo[]) => {
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
+      } catch {
+        // ignore
+      }
+    };
+
+    const doFetch = async () => {
+      if (fetchingStates.get(fetchKey)) return;
+      fetchingStates.set(fetchKey, true);
+      
+      try {
+        const { fetchEmprestimos } = await import('../services/emprestimosService');
+        const fetched = await fetchEmprestimos();
+        saveToCache(fetched);
+        if (isMounted) setStateSafe(fetched);
+      } catch (err) {
+        if ((err as any)?.name === 'AbortError') return;
+        handleError(err, 'useEmprestimos - fetch');
+        if (isMounted) setError('Erro ao carregar empréstimos');
+      } finally {
+        if (isMounted) setLoading(false);
+        fetchingStates.delete(fetchKey);
+      }
+    };
+
+    (async () => {
+      try {
+        // Primeiro, tenta usar cache
+        const cached = loadFromCache();
+        if (cached) {
+          const age = Date.now() - cached.timestamp;
+          setStateSafe(cached.data);
+          
+          // Se estiver fresco, apenas exibe cache e finaliza
+          if (age < TTL) {
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Sem cache ou cache stale -> busca e atualiza estado
+        await doFetch();
+      } catch (e) {
+        handleError(e, 'useEmprestimos - outer');
+        if (isMounted) setError('Erro ao carregar empréstimos');
+        if (isMounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+      // Não aborta para permitir que a requisição complete
+    };
   }, []);
 
-  const createEmprestimo = useCallback((novoEmprestimo: Omit<Emprestimo, 'id'>) => {
-    const emprestimoComId = {
-      ...novoEmprestimo,
-      id: generateId('emprestimo')
-    } as Emprestimo;
-    setEmprestimosAtivos(prev => [...prev, emprestimoComId]);
-    return emprestimoComId;
-  }, []);
+  // Força recarga de empréstimos do backend (ignora cache)
+  async function refetchEmprestimos(): Promise<void> {
+    try {
+      const { fetchEmprestimos } = await import('../services/emprestimosService');
+      const fetched = await fetchEmprestimos();
+      setEmprestimos(fetched);
+      try {
+        sessionStorage.setItem('ludicom:emprestimos:cache', JSON.stringify({ data: fetched, timestamp: Date.now() }));
+      } catch {}
+    } catch (e) {
+      handleError(e, 'useEmprestimos - refetchEmprestimos');
+    }
+  }
 
   return {
-    emprestimosAtivos,
-    historicoEmprestimos,
+    emprestimos,
     loading,
     error,
-    createEmprestimo
+    refetchEmprestimos
   };
 }
 
@@ -405,15 +488,22 @@ export function useInstituicoes() {
   const [instituicoes, setInstituicoes] = useState<Instituicao[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    const fetchKey = 'instituicoes';
     let isMounted = true;
-    const controller = new AbortController();
 
     (async () => {
+      // Verifica flag global para evitar requisições duplicadas
+      if (fetchingStates.get(fetchKey)) return;
+      fetchingStates.set(fetchKey, true);
+      
+      controllerRef.current = new AbortController();
+      
       try {
         setLoading(true);
-        const data = await fetchInstituicoes(controller.signal);
+        const data = await fetchInstituicoes(controllerRef.current.signal);
         if (isMounted) {
           setInstituicoes(data);
           setError(null);
@@ -424,12 +514,13 @@ export function useInstituicoes() {
         if (isMounted) setError('Erro ao carregar instituições');
       } finally {
         if (isMounted) setLoading(false);
+        fetchingStates.delete(fetchKey);
       }
     })();
 
     return () => {
       isMounted = false;
-      controller.abort();
+      // Não aborta para permitir que a requisição complete
     };
   }, []);
 

@@ -2,17 +2,18 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '../components';
 import { useToast } from '../components/common';
 import { emprestimoDetailFields, emprestimoEditFields, emprestimoCreateFields, MESSAGES, EMPRESTIMO_COLUMNS, EMPRESTIMO_DETAIL_COLUMNS } from '../shared/constants';
-import { useJogos, useParticipantes, useEventos } from '../shared/hooks';
-import { createEmprestimo, updateEmprestimo, deleteEmprestimo, fetchEmprestimos, devolverEmprestimo } from '../shared/services/emprestimosService';
+import { useJogos, useParticipantes, useEventos, useEmprestimos } from '../shared/hooks';
+import { createEmprestimo, updateEmprestimo, deleteEmprestimo, devolverEmprestimo } from '../shared/services/emprestimosService';
 import type { CreateField } from '../components/modals/CreateModal';
 import type { EditField } from '../components/modals/EditModal';
 import { handleError, formatTimeHHMM } from '../shared/utils';
 import type { Emprestimo, TableAction } from '../shared/types';
 
 const Emprestimos: React.FC = () => {
-  const { jogos, updateJogo, setDisponibilidadeLocal, refetchJogos } = useJogos();
+  const { jogos, refetchJogos } = useJogos();
   const { participantes } = useParticipantes();
-  const { eventos } = useEventos();
+  const { eventos, refetchEventos } = useEventos();
+  const { emprestimos, refetchEmprestimos } = useEmprestimos();
   const { showErrorList, showError, showSuccess } = useToast();
   const [emprestimosAtivos, setEmprestimosAtivos] = useState<Emprestimo[]>([]);
   const [historicoEmprestimos, setHistoricoEmprestimos] = useState<Emprestimo[]>([]);
@@ -22,37 +23,32 @@ const Emprestimos: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
 
+  // Processa empréstimos do hook para separar ativos e histórico
   useEffect(() => {
-    let mounted = true;
-    const controller = new AbortController();
-    (async () => {
-      const fetched = await fetchEmprestimos(controller.signal);
-
-      // Serviço já normaliza nomes; garante fallback às listas locais se vierem vazios.
-      const emprestimosMapeados = fetched.map(emp => {
-        const jogoNome = emp.jogo || jogos.find(j => String(j.id) === String(emp.idJogo))?.nome || 'Jogo não encontrado';
-        const participanteNome = emp.participante || participantes.find(p => String(p.id) === String(emp.idParticipante))?.nome || 'Participante não encontrado';
-        return {
-          ...emp,
-          jogo: jogoNome,
-          participante: participanteNome,
-          horario: emp.horaEmprestimo,
-        } as Emprestimo;
-      });
-      
-      const ativos = emprestimosMapeados.filter(e => !e.isDevolvido);
-      const historico = emprestimosMapeados.filter(e => e.isDevolvido);
-      if (mounted) {
-        setEmprestimosAtivos(ativos);
-        setHistoricoEmprestimos(historico);
-      }
-    })();
-    return () => { mounted = false; controller.abort(); };
-  }, [jogos, participantes]);
+    // Serviço já normaliza nomes; garante fallback às listas locais se vierem vazios.
+    const emprestimosMapeados = emprestimos.map(emp => {
+      const jogoNome = emp.jogo || jogos.find(j => String(j.id) === String(emp.idJogo))?.nome || 'Jogo não encontrado';
+      const participanteNome = emp.participante || participantes.find(p => String(p.id) === String(emp.idParticipante))?.nome || 'Participante não encontrado';
+      return {
+        ...emp,
+        jogo: jogoNome,
+        participante: participanteNome,
+        horario: emp.horaEmprestimo,
+      } as Emprestimo;
+    });
+    
+    const ativos = emprestimosMapeados.filter(e => !e.isDevolvido);
+    const historico = emprestimosMapeados.filter(e => e.isDevolvido);
+    
+    setEmprestimosAtivos(ativos);
+    setHistoricoEmprestimos(historico);
+  }, [emprestimos, jogos, participantes]);
 
   const handleRegistrarEmprestimo = useCallback(() => {
+    // Recarrega eventos para garantir dados atualizados
+    if (refetchEventos) refetchEventos();
     setIsCreateModalOpen(true);
-  }, []);
+  }, [refetchEventos]);
 
   const handleRegistrarDevolucao = useCallback(() => {
     setIsReturnModalOpen(true);
@@ -108,21 +104,9 @@ const Emprestimos: React.FC = () => {
 
       const saved = await createEmprestimo(payload);
 
-      // Marca o jogo como indisponível imediatamente (fallback local se remoto falhar)
-      if (updateJogo) {
-        try {
-          const updated = await updateJogo(String(jogoSelecionado.id), { isDisponivel: false });
-          // Se backend não retornou alteração, força local
-          if (updated && updated.isDisponivel) {
-            setDisponibilidadeLocal(String(jogoSelecionado.id), false);
-          }
-        } catch (e) {
-          handleError(e, 'Emprestimos - marcar jogo indisponível (remoto falhou, aplicando local)');
-          setDisponibilidadeLocal(String(jogoSelecionado.id), false);
-        }
-      } else {
-        setDisponibilidadeLocal(String(jogoSelecionado.id), false);
-      }
+      // Backend já marca o jogo como indisponível automaticamente
+      // Apenas recarrega a lista de jogos para refletir a mudança
+      if (refetchJogos) refetchJogos();
       
       // Adicionar informações de exibição
       const emprestimoCompleto = {
@@ -137,6 +121,9 @@ const Emprestimos: React.FC = () => {
       } else {
         setEmprestimosAtivos(prev => [...prev, emprestimoCompleto]);
       }
+      
+      // Atualiza cache de empréstimos
+      if (refetchEmprestimos) refetchEmprestimos();
       
       showSuccess('Empréstimo registrado com sucesso!');
       setIsCreateModalOpen(false); // Fecha apenas em caso de sucesso
@@ -165,21 +152,10 @@ const Emprestimos: React.FC = () => {
 
       setEmprestimosAtivos(prevEmprestimos => prevEmprestimos.filter(e => String(e.id) !== String(emprestimo.id)));
 
-      // Se não houver outro empréstimo ativo do mesmo jogo, marca disponibilidade novamente
-      if (!existeOutroAtivoMesmoJogo) {
-        const jogoObj = jogos.find(j => (jogoIdRef && String(j.id) === jogoIdRef) || j.nome === emprestimo.jogo);
-        if (jogoObj) {
-          if (updateJogo) {
-            updateJogo(String(jogoObj.id), { isDisponivel: true })
-              .catch(() => setDisponibilidadeLocal(String(jogoObj.id), true));
-          } else {
-            setDisponibilidadeLocal(String(jogoObj.id), true);
-          }
-        }
-      }
-
-      // Recarrega jogos para atualizar disponibilidade
+      // Backend já atualiza a disponibilidade do jogo automaticamente
+      // Apenas recarrega as listas para refletir as mudanças
       if (refetchJogos) refetchJogos();
+      if (refetchEmprestimos) refetchEmprestimos();
 
       showSuccess('Empréstimo excluído com sucesso!');
     } catch (e: any) {
@@ -205,58 +181,21 @@ const Emprestimos: React.FC = () => {
         return;
       }
 
-      // Chama API de devolução
-      let remotoAtualizado: Emprestimo | null = null;
-      try {
-        remotoAtualizado = await devolverEmprestimo(String(jogoSelecionado.codigoDeBarras));
-      } catch (e: any) {
-        handleError(e, 'Emprestimos - devolver manual');
-        if (e?.errors) showErrorList(e.errors); else showError(e?.message || 'Erro ao devolver empréstimo');
-        return;
-      }
+      // Backend processa toda a lógica: encontra empréstimo ativo, atualiza horaDevolucao,
+      // marca isDevolvido=true e atualiza disponibilidade do jogo
+      await devolverEmprestimo(String(jogoSelecionado.codigoDeBarras));
 
-      // Localiza empréstimo ativo correspondente
-      const jogoIdRef = String(jogoSelecionado.id);
-      const emprestimoAtivo = emprestimosAtivos.find(e => (e.idJogo && String(e.idJogo) === jogoIdRef) || e.jogo === jogoSelecionado.nome);
-      if (!emprestimoAtivo) {
-        showError('Não há empréstimo ativo para este jogo.');
-        return;
-      }
-
-      const horaNow = formatTimeHHMM(new Date());
-      const emprestimoAtualizado: Emprestimo = remotoAtualizado ? {
-        ...emprestimoAtivo,
-        ...remotoAtualizado,
-        isDevolvido: true,
-        horaDevolucao: remotoAtualizado.horaDevolucao || horaNow,
-        horario: emprestimoAtivo.horario
-      } : {
-        ...emprestimoAtivo,
-        isDevolvido: true,
-        horaDevolucao: horaNow
-      };
-
-      // Atualiza listas
-      setEmprestimosAtivos(prev => prev.filter(e => e.id !== emprestimoAtivo.id));
-      setHistoricoEmprestimos(prev => [...prev, emprestimoAtualizado]);
-
-      // Marca jogo disponível
-      if (updateJogo) {
-        updateJogo(String(jogoSelecionado.id), { isDisponivel: true })
-          .catch(() => setDisponibilidadeLocal(String(jogoSelecionado.id), true));
-      } else {
-        setDisponibilidadeLocal(String(jogoSelecionado.id), true);
-      }
-
+      // Recarrega caches para refletir mudanças do backend
       if (refetchJogos) refetchJogos();
+      if (refetchEmprestimos) refetchEmprestimos();
 
       showSuccess('Devolução registrada com sucesso!');
-      setIsReturnModalOpen(false); // Fecha apenas em caso de sucesso
+      setIsReturnModalOpen(false);
     } catch (e: any) {
       handleError(e, 'Emprestimos - salvar devolucao manual');
       if (e?.errors) showErrorList(e.errors); else showError(e?.message || 'Erro ao registrar devolução');
     }
-  }, [jogos, emprestimosAtivos, updateJogo, setDisponibilidadeLocal, refetchJogos, showError, showErrorList, showSuccess]);
+  }, [jogos, refetchJogos, refetchEmprestimos, showError, showErrorList, showSuccess]);
 
   const handleDevolver = useCallback(async (emprestimo: Emprestimo) => {
     if (!window.confirm(`${MESSAGES.CONFIRM_RETURN}\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}\nHorário: ${emprestimo.horario}`)) return;
@@ -273,57 +212,20 @@ const Emprestimos: React.FC = () => {
         return;
       }
 
-      // Chama endpoint específico de devolução via código de barras
-      let remotoAtualizado: Emprestimo | null = null;
-      try {
-        remotoAtualizado = await devolverEmprestimo(String(jogoObj.codigoDeBarras));
-      } catch (err: any) {
-        if (err?.errors) showErrorList(err.errors); else showError(err?.message || 'Erro ao devolver empréstimo');
-        return; // Aborta fluxo se API falha
-      }
+      // Backend processa toda a lógica: encontra empréstimo ativo, atualiza horaDevolucao,
+      // marca isDevolvido=true e atualiza disponibilidade do jogo
+      await devolverEmprestimo(String(jogoObj.codigoDeBarras));
 
-      const horaNow = formatTimeHHMM(new Date());
-      const emprestimoAtualizado: Emprestimo = remotoAtualizado ? {
-        ...emprestimo,
-        ...remotoAtualizado,
-        isDevolvido: true,
-        horaDevolucao: remotoAtualizado.horaDevolucao || horaNow,
-        horario: emprestimo.horario
-      } : {
-        ...emprestimo,
-        isDevolvido: true,
-        horaDevolucao: horaNow
-      };
-
-      // Verifica se existem outros empréstimos ativos para o mesmo jogo ANTES de remover
-      const jogoIdRef = String(emprestimo.idJogo || '');
-      const existeOutroAtivoMesmoJogo = emprestimosAtivos.some(e => e.id !== emprestimo.id && !e.isDevolvido && (
-        (jogoIdRef && String(e.idJogo || '') === jogoIdRef) || e.jogo === emprestimo.jogo
-      ));
-
-      // Move dos ativos para histórico
-      setEmprestimosAtivos(prevAtivos => prevAtivos.filter(e => String(e.id) !== String(emprestimo.id)));
-      setHistoricoEmprestimos(prevHistorico => [...prevHistorico, emprestimoAtualizado]);
-
-      // Se não houver outro empréstimo ativo do mesmo jogo, marca disponibilidade novamente
-      if (!existeOutroAtivoMesmoJogo) {
-        if (updateJogo) {
-          updateJogo(String(jogoObj.id), { isDisponivel: true })
-            .catch(() => setDisponibilidadeLocal(String(jogoObj.id), true));
-        } else {
-          setDisponibilidadeLocal(String(jogoObj.id), true);
-        }
-      }
-
-      // Recarrega jogos para atualizar disponibilidade
+      // Recarrega caches para refletir mudanças do backend
       if (refetchJogos) refetchJogos();
+      if (refetchEmprestimos) refetchEmprestimos();
 
       showSuccess('Empréstimo devolvido com sucesso!');
     } catch (e: any) {
       handleError(e, 'Emprestimos - devolver (novo endpoint)');
       if (e?.errors) showErrorList(e.errors); else showError(e?.message || 'Erro ao devolver empréstimo');
     }
-  }, [showError, showErrorList, showSuccess, jogos, emprestimosAtivos, updateJogo, setDisponibilidadeLocal, refetchJogos]);
+  }, [showError, showErrorList, showSuccess, jogos, refetchJogos, refetchEmprestimos]);
 
   // Handlers para histórico de empréstimos
   const handleDetalhesHistorico = useCallback((emprestimo: Emprestimo) => {
@@ -414,6 +316,10 @@ const Emprestimos: React.FC = () => {
       
       // Atualiza o item selecionado para refletir as mudanças no DetailModal
       setSelectedEmprestimo(emprestimoFinal);
+      
+      // Atualiza cache de empréstimos
+      if (refetchEmprestimos) refetchEmprestimos();
+      
       showSuccess('Empréstimo atualizado com sucesso!');
       setIsEditModalOpen(false); // Fecha apenas em caso de sucesso
     } catch (e: any) {
@@ -432,6 +338,10 @@ const Emprestimos: React.FC = () => {
     try {
       await deleteEmprestimo(String(emprestimo.id));
       setHistoricoEmprestimos(prevHistorico => prevHistorico.filter(e => String(e.id) !== String(emprestimo.id)));
+      
+      // Atualiza cache de empréstimos
+      if (refetchEmprestimos) refetchEmprestimos();
+      
       setIsModalOpen(false);
       showSuccess('Empréstimo excluído com sucesso!');
     } catch (e: any) {
@@ -567,15 +477,33 @@ const Emprestimos: React.FC = () => {
 
     const dataFormatada = new Date(eventoAtual.data + 'T00:00:00').toLocaleDateString('pt-BR');
 
+    // Verificar se falta 30 minutos ou menos para o fim do evento
+    const [horaFim, minutoFim] = String(eventoAtual.horaFim).substring(0, 5).split(':').map(Number);
+    const [horaAtual, minutoAtual] = currentTime.split(':').map(Number);
+    const minutosAteFim = (horaFim * 60 + minutoFim) - (horaAtual * 60 + minutoAtual);
+    const mostrarAviso = minutosAteFim <= 30 && minutosAteFim > 0;
+
     return (
       <div>
         <strong>📍 Evento Atual:</strong><br />
         <strong>Local:</strong> {instituicaoNome}<br />
         <strong>Data:</strong> {dataFormatada}<br />
         <strong>Horário:</strong> {eventoAtual.horaInicio} - {eventoAtual.horaFim}
+        {mostrarAviso && (
+          <div style={{ 
+            marginTop: '0.75rem', 
+            padding: '0.75rem', 
+            backgroundColor: '#fff9c4', 
+            border: '1px solid #fbc02d',
+            borderRadius: '4px',
+            color: '#7f6003'
+          }}>
+            <strong>⚠️ Atenção:</strong> Faltam {minutosAteFim} minutos para o término do evento. Após o término, não será possível registrar novos empréstimos.
+          </div>
+        )}
       </div>
     );
-  }, [eventos]);
+  }, [eventos, isCreateModalOpen]);
 
   return (
     <div className="page-container">
