@@ -76,6 +76,8 @@
     display: flex;
     align-items: center;
     cursor: pointer;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--border-radius);
 }
 
 .nav-item.active {
@@ -83,9 +85,14 @@
     border-radius: var(--border-radius);
 }
 
-.nav-item:hover {
-    opacity: var(--primary-hover);
+.nav-item:hover:not(.active) {
+    background-color: var(--btn-primary);
     transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.nav-item.active:hover {
+    background-color: var(--btn-primary);
 }
 
 .nav-item:active {

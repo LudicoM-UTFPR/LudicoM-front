@@ -1,4 +1,4 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Header, Footer } from "../components";
 import { ToastProvider, AnimatedBackground } from "../components/common";
@@ -15,6 +15,37 @@ const Emprestimos = React.lazy(() => import("../pages/Emprestimos"));
 const Login = React.lazy(() => import("../pages/Login"));
 
 const App: React.FC = () => {
+    // Observa a altura do header e atualiza a variável CSS --header-height
+    useEffect(() => {
+        const header = document.querySelector('.header') as HTMLElement | null;
+        if (!header) return;
+
+        const applyHeight = () => {
+            const h = header.offsetHeight;
+            document.documentElement.style.setProperty('--header-height', h + 'px');
+        };
+
+        applyHeight();
+
+        // Usa ResizeObserver para mudanças (wrap em telas menores)
+        let ro: ResizeObserver | null = null;
+        if ('ResizeObserver' in window) {
+            ro = new ResizeObserver(() => applyHeight());
+            ro.observe(header);
+        } else {
+            // Fallback simples em resize
+            window.addEventListener('resize', applyHeight);
+        }
+
+        window.addEventListener('orientationchange', applyHeight);
+
+        return () => {
+            if (ro) ro.disconnect();
+            window.removeEventListener('resize', applyHeight);
+            window.removeEventListener('orientationchange', applyHeight);
+        };
+    }, []);
+
     return (
         <ToastProvider>
             <Router>

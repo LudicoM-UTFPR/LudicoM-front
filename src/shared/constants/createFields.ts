@@ -160,14 +160,8 @@ export const eventoCreateFields: CreateField<Evento>[] = [
     type: 'date', 
     required: true,
     defaultValue: new Date().toISOString().split('T')[0],
-    validation: (value: string) => {
-      const selectedDate = new Date(value);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (selectedDate < today) return 'Data não pode ser anterior a hoje';
-      return null;
-    }
+    // Removida validação de impedir datas anteriores a hoje para permitir criação retroativa
+    // Caso seja necessário validar futuramente, adicionar função aqui
   },
   { 
     key: 'instituicao', 

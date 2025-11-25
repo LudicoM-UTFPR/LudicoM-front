@@ -68,14 +68,14 @@ const QuickActions: React.FC = () => {
             <section className="acoes-rapidas">
                 <h2 className="acoes-title">Ações Rápidas</h2>
                 <div className="acoes-buttons">
-                    <button className="btn btn--xlarge btn--primary" onClick={handleAdicionarParticipante}>
+                    <button className="btn btn--xlarge" onClick={handleAdicionarParticipante}>
                         Adicionar Participante
                     </button>
-                    <button className="btn btn--xlarge btn--primary" onClick={handleConsultarJogo}>
+                    <button className="btn btn--xlarge" onClick={handleConsultarJogo}>
                         Consultar Jogo
                     </button>
                     <button
-                        className="btn btn--xlarge btn--primary"
+                        className="btn btn--xlarge"
                         onClick={handleRegistrarEmprestimo}
                     >
                         Registrar Empréstimo

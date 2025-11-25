@@ -28,8 +28,9 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 48px;
-    padding-block-start: 128px;
+    gap: 32px;
+    /* Padding superior dinâmico baseado na altura real do header */
+    padding-block-start: calc(var(--header-height) + 8px);
     padding-block-end: 50px;
     margin-inline: auto;
     min-height: 100vh;

@@ -147,9 +147,19 @@ const Jogos: React.FC = () => {
     <div className="page-container">
       <PageHeader 
         title="Gerenciamento de Jogos"
-        buttonText="Criar Jogo"
-        onButtonClick={handleCriarJogo}
+        showButton={false}
       />
+      <section style={{ marginBottom: '24px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <div className="acoes-buttons">
+          <button
+            type="button"
+            className="btn btn--xlarge"
+            onClick={handleCriarJogo}
+          >
+            Criar Jogo
+          </button>
+        </div>
+      </section>
       <GenericTable<Jogo>
         data={localJogos}
         columns={JOGO_COLUMNS}

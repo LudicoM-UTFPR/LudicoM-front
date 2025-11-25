@@ -106,6 +106,17 @@
     box-shadow: 0 4px 12px rgba(42, 157, 143, 0.3);
 }
 
+/* ==============================================
+   LIGHT THEME OVERRIDES
+   ============================================== */
+/* Força texto branco nos botões secondary/tertiary no tema claro */
+[data-theme="light"] .btn--secondary,
+[data-theme="light"] .btn--secondary:hover,
+[data-theme="light"] .btn--tertiary,
+[data-theme="light"] .btn--tertiary:hover {
+    color: #FFFFFF;
+}
+
 .btn--ghost {
     background-color: transparent;
     border: 1px solid #6C757D;

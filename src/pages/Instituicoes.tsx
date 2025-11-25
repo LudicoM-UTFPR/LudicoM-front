@@ -144,9 +144,19 @@ const Instituicoes: React.FC = () => {
     <div className="page-container">
       <PageHeader
         title="Gerenciamento de Instituições"
-        buttonText="Criar Instituição"
-        onButtonClick={handleCriar}
+        showButton={false}
       />
+      <section style={{ marginBottom: '24px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <div className="acoes-buttons">
+          <button
+            type="button"
+            className="btn btn--xlarge"
+            onClick={handleCriar}
+          >
+            Criar Instituição
+          </button>
+        </div>
+      </section>
 
       <GenericTable<InstituicaoUI>
         data={instituicoes}

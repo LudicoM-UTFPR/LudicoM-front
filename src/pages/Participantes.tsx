@@ -214,9 +214,19 @@ const Participantes: React.FC = () => {
     <div className="page-container">
       <PageHeader 
         title="Gerenciamento de Participantes"
-        buttonText="Adicionar Participante"
-        onButtonClick={handleAdicionarParticipante}
+        showButton={false}
       />
+      <section style={{ marginBottom: '24px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <div className="acoes-buttons">
+          <button
+            type="button"
+            className="btn btn--xlarge"
+            onClick={handleAdicionarParticipante}
+          >
+            Adicionar Participante
+          </button>
+        </div>
+      </section>
       <GenericTable<Participante>
         data={localParticipantes}
         columns={PARTICIPANTE_COLUMNS}

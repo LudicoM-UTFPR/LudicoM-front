@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Autocomplete } from '../common';
 
 export interface CreateField<T> {
@@ -39,6 +39,15 @@ export function CreateModal<T extends { id: number | string }>({
 }: CreateModalProps<T>) {
   const [formData, setFormData] = useState<Partial<Omit<T, 'id'>>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // ID único por instância para evitar conflitos quando múltiplos modais estão abertos
+  const formIdRef = useRef<string>(() => {
+    const rnd = Math.random().toString(36).slice(2, 9);
+    return `create-modal-form-${Date.now()}-${rnd}`;
+  });
+  // Corrige valor real (useRef inicial pode ser função se não invocada)
+  if (typeof formIdRef.current === 'function') {
+    formIdRef.current = (formIdRef.current as unknown as () => string)();
+  }
 
   // Bloqueia scroll da página quando modal está aberto
   useEffect(() => {
@@ -346,7 +355,7 @@ export function CreateModal<T extends { id: number | string }>({
         </div>
         
         <div className="modal-content">
-          <form id="create-modal-form" onSubmit={handleSubmit} className="edit-modal-form">
+          <form id={formIdRef.current} onSubmit={handleSubmit} className="edit-modal-form">
             {infoMessage && (
               <div className="modal-info-message" style={{
                 padding: '12px 16px',
@@ -404,7 +413,7 @@ export function CreateModal<T extends { id: number | string }>({
             </button>
             <button 
               type="submit"
-              form="create-modal-form"
+              form={formIdRef.current}
               className="action-btn action-btn--primary"
             >
               Criar
