@@ -2,16 +2,16 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '../components';
 import { useToast } from '../components/common';
 import { emprestimoDetailFields, emprestimoEditFields, emprestimoCreateFields, MESSAGES, EMPRESTIMO_COLUMNS, EMPRESTIMO_DETAIL_COLUMNS } from '../shared/constants';
-import { useJogos, useParticipantes } from '../shared/hooks';
+import { useJogos, useParticipantes, useEventos } from '../shared/hooks';
 import { createEmprestimo, updateEmprestimo, deleteEmprestimo, fetchEmprestimos } from '../shared/services/emprestimosService';
 import type { CreateField } from '../components/modals/CreateModal';
-import emprestimosData from '../shared/data/emprestimos.json';
-import { handleError, formatTimeHHMM, isoToHHMM, getDevolvidosLocal, generateId } from '../shared/utils';
+import { handleError, formatTimeHHMM } from '../shared/utils';
 import type { Emprestimo, TableAction } from '../shared/types';
 
 const Emprestimos: React.FC = () => {
   const { jogos } = useJogos();
   const { participantes } = useParticipantes();
+  const { eventos } = useEventos();
   const { showErrorList, showError, showSuccess } = useToast();
   const [emprestimosAtivos, setEmprestimosAtivos] = useState<Emprestimo[]>([]);
   const [historicoEmprestimos, setHistoricoEmprestimos] = useState<Emprestimo[]>([]);
@@ -21,45 +21,26 @@ const Emprestimos: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
-    try {
-      // Validação e carregamento dos dados
-      const allValidatedData = emprestimosData.map((item): Emprestimo => ({
-        id: String(item.id),
-        idJogo: String(item.idJogo),
-        idParticipante: String(item.idParticipante),
-        idEvento: String(item.idEvento),
-        // normaliza para HH:mm quando possível
-        horaEmprestimo: item.horaEmprestimo && String(item.horaEmprestimo).includes('T') ? (isoToHHMM(String(item.horaEmprestimo)) || '') : String(item.horaEmprestimo || ''),
-        horaDevolucao: item.horaDevolucao && String(item.horaDevolucao).includes('T') ? isoToHHMM(String(item.horaDevolucao)) : (item.horaDevolucao ? String(item.horaDevolucao) : null),
-        isDevolvido: Boolean(item.isDevolvido),
-        // Campos computados para exibição
-        jogo: String(item.jogo || ""),
-        participante: String(item.participante || ""),
-        horario: String(item.horario || "")
-      }));
-
-    // Aplica devoluções marcadas localmente (sincroniza com Home)
-    const devolvidosMap = getDevolvidosLocal();
-
-    const ativos = allValidatedData.filter(item => !item.isDevolvido && !devolvidosMap[String(item.id)]);
-    const historicoFromSource = allValidatedData.filter(item => item.isDevolvido);
-
-    // itens devolvidos via UI local
-    const historicoFromLocal = Object.keys(devolvidosMap).map(key => {
-      const id = String(key);
-      const original = allValidatedData.find(a => String(a.id) === id);
-      if (!original) return null;
-      return { ...original, isDevolvido: true, horaDevolucao: devolvidosMap[key] } as Emprestimo;
-    }).filter(Boolean) as Emprestimo[];
-
-    const historico = [...historicoFromSource, ...historicoFromLocal];
-
-    setEmprestimosAtivos(ativos);
-    setHistoricoEmprestimos(historico);
-    } catch (error) {
-      handleError(error, "Emprestimos - Data Loading");
-    }
-  }, []);
+    let mounted = true;
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const fetched = await fetchEmprestimos(controller.signal);
+        // Adiciona campo 'horario' para compatibilidade com tabela
+        const withHorario = fetched.map(e => ({ ...e, horario: e.horaEmprestimo }));
+        const ativos = withHorario.filter(e => !e.isDevolvido);
+        const historico = withHorario.filter(e => e.isDevolvido);
+        if (mounted) {
+          setEmprestimosAtivos(ativos);
+          setHistoricoEmprestimos(historico);
+        }
+      } catch (error) {
+        handleError(error, 'Emprestimos - fetch');
+        showError('Erro ao carregar empréstimos');
+      }
+    })();
+    return () => { mounted = false; controller.abort(); };
+  }, [showError]);
 
   const handleRegistrarEmprestimo = useCallback(() => {
     setIsCreateModalOpen(true);
@@ -81,11 +62,32 @@ const Emprestimos: React.FC = () => {
         return;
       }
 
-      // Construir payload para API - usa uid (UUID) quando disponível
+      // Encontrar evento atual (horário está entre horaInicio e horaFim hoje)
+      const now = new Date();
+      // Usar data local ao invés de UTC
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      const eventoAtual = eventos.find(ev => {
+        if (ev.data !== todayStr) return false;
+        const inicio = ev.horaInicio ? String(ev.horaInicio).substring(0, 5) : '';
+        const fim = ev.horaFim ? String(ev.horaFim).substring(0, 5) : '';
+        return currentTime >= inicio && currentTime <= fim;
+      });
+
+      if (!eventoAtual) {
+        showError('Nenhum evento ativo no momento. Verifique se existe um evento cadastrado para hoje com horário atual.');
+        return;
+      }
+
+      // Construir payload para API usando IDs reais (uid)
       const payload = {
-        idJogo: (jogoSelecionado as any).uid || jogoSelecionado.id,
-        idParticipante: (participanteSelecionado as any).uid || participanteSelecionado.id,
-        idEvento: '1', // TODO: pegar do contexto ou evento atual
+        idJogo: String(jogoSelecionado.id),
+        idParticipante: String(participanteSelecionado.id),
+        idEvento: String(eventoAtual.id),
         horaEmprestimo: novoEmprestimo.horaEmprestimo,
         horaDevolucao: novoEmprestimo.horaDevolucao || null,
         isDevolvido: novoEmprestimo.isDevolvido || false,
@@ -270,11 +272,13 @@ const Emprestimos: React.FC = () => {
   const emprestimoCreateFieldsWithOptions: CreateField<Emprestimo>[] = useMemo(() => {
     return emprestimoCreateFields.map(field => {
       if (field.key === 'jogo') {
+        // Filtra apenas jogos disponíveis
+        const jogosDisponiveis = jogos.filter(jogo => jogo.isDisponivel);
         return {
           ...field,
           type: 'autocomplete' as const,
           dataListId: 'jogos-list',
-          options: jogos.map(jogo => ({
+          options: jogosDisponiveis.map(jogo => ({
             value: jogo.nome,
             label: jogo.nome,
             searchValue: jogo.codigoDeBarras // Adiciona código de barras para busca
@@ -296,6 +300,48 @@ const Emprestimos: React.FC = () => {
       return field;
     });
   }, [jogos, participantes]);
+
+  // Calcular evento atual
+  const eventoAtualInfo = useMemo(() => {
+    const now = new Date();
+    // Usar data local ao invés de UTC
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    const eventoAtual = eventos.find(ev => {
+      if (ev.data !== todayStr) return false;
+      const inicio = ev.horaInicio ? String(ev.horaInicio).substring(0, 5) : '';
+      const fim = ev.horaFim ? String(ev.horaFim).substring(0, 5) : '';
+      return currentTime >= inicio && currentTime <= fim;
+    });
+
+    if (!eventoAtual) {
+      return (
+        <div>
+          <strong>⚠️ Atenção:</strong> Nenhum evento ativo no momento.<br />
+          Verifique se existe um evento cadastrado para hoje com horário atual.
+        </div>
+      );
+    }
+
+    const instituicaoNome = typeof eventoAtual.instituicao === 'string' 
+      ? eventoAtual.instituicao 
+      : eventoAtual.instituicao?.nome || 'Não informada';
+
+    const dataFormatada = new Date(eventoAtual.data + 'T00:00:00').toLocaleDateString('pt-BR');
+
+    return (
+      <div>
+        <strong>📍 Evento Atual:</strong><br />
+        <strong>Local:</strong> {instituicaoNome}<br />
+        <strong>Data:</strong> {dataFormatada}<br />
+        <strong>Horário:</strong> {eventoAtual.horaInicio} - {eventoAtual.horaFim}
+      </div>
+    );
+  }, [eventos]);
 
   return (
     <div className="page-container">
@@ -375,6 +421,7 @@ const Emprestimos: React.FC = () => {
         onSave={handleSalvarCriacao}
         fields={emprestimoCreateFieldsWithOptions}
         title="Registrar Novo Empréstimo"
+        infoMessage={eventoAtualInfo}
       />
     </div>
   );

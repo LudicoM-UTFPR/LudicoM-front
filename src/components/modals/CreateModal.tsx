@@ -23,6 +23,8 @@ export interface CreateModalProps<T> {
   inlineFieldActions?: Record<string, { label?: string; title?: string; icon?: React.ReactNode; onClick: () => void }>;
   // Prefill externo: quando muda, mescla valores no form sem reinicializar tudo
   prefill?: Partial<Omit<T, 'id'>>;
+  // Mensagem informativa no topo do modal (ex: evento atual)
+  infoMessage?: string | React.ReactNode;
 }
 
 export function CreateModal<T extends { id: number | string }>({ 
@@ -32,7 +34,8 @@ export function CreateModal<T extends { id: number | string }>({
   fields, 
   title = 'Criar Novo Item',
   inlineFieldActions,
-  prefill
+  prefill,
+  infoMessage
 }: CreateModalProps<T>) {
   const [formData, setFormData] = useState<Partial<Omit<T, 'id'>>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -331,6 +334,20 @@ export function CreateModal<T extends { id: number | string }>({
         
         <form onSubmit={handleSubmit} className="edit-modal-form">
           <div className="modal-content">
+            {infoMessage && (
+              <div className="modal-info-message" style={{
+                padding: '12px 16px',
+                marginBottom: '20px',
+                backgroundColor: '#e3f2fd',
+                border: '1px solid #2196f3',
+                borderRadius: '6px',
+                color: '#1565c0',
+                fontSize: '14px',
+                lineHeight: '1.5'
+              }}>
+                {infoMessage}
+              </div>
+            )}
             <div className="edit-fields">
               {fields.map((field) => {
                 if (field.key === 'id') return null; // Não renderiza campo ID
