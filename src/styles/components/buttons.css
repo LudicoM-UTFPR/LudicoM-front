@@ -351,3 +351,10 @@
         font-size: 18px;
     }
 }
+
+@media (max-width: 400px) {
+    .btn--large { padding: 6px 12px; font-size: 13px; height: 34px; min-width: 110px; }
+    .btn--medium { padding: 6px 10px; font-size: 12px; height: 30px; min-width: 70px; }
+    .action-btn { padding: 4px 8px; font-size: 11px; height: 26px; min-width: 56px; }
+    .login-btn { width: 64px; height: 30px; font-size: 16px; }
+}
