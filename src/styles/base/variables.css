@@ -5,7 +5,15 @@
     --primary-hover: rgba(231, 111, 81, 0.9);
     --primary-shadow: rgba(231, 111, 81, 0.3);
 
-    /* Cores de fundo */
+    /* Cores de botões - Tema Escuro */
+    --btn-primary: #E76F51;
+    --btn-primary-hover: #D9664A;
+    --btn-secondary: #457B9D;
+    --btn-secondary-hover: #35607E;
+    --btn-danger: #DC3545;
+    --btn-danger-hover: #C82333;
+
+    /* Cores de fundo - Tema Escuro */
     --bg-primary: #171717;
     --bg-secondary: black;
     --bg-tertiary: #322F2E;
@@ -13,7 +21,7 @@
     --bg-table-odd: #FAEDE6;
     --bg-table-even: #F9F9F9;
 
-    /* Cores de texto */
+    /* Cores de texto - Tema Escuro */
     --text-primary: #FFFFFF;
     --text-secondary: #666666;
     --text-dark: #000000;
@@ -62,4 +70,31 @@
     /* Z-index */
     --z-header: 1000;
     --z-modal: 1001;
+}
+
+/* Tema Claro */
+[data-theme="light"] {
+    /* Cores de botões - Tema Claro (tons pastéis) */
+    --btn-primary: #F4A896;
+    --btn-primary-hover: #ED9783;
+    --btn-secondary: #8BADC4;
+    --btn-secondary-hover: #6D9AB8;
+    --btn-danger: #E89BA5;
+    --btn-danger-hover: #E07D8A;
+
+    /* Cores de fundo - Tema Claro com tons pastéis */
+    --bg-primary: #F7F3F0;
+    --bg-secondary: #E8DED6;
+    --bg-tertiary: #D4C4B8;
+    --bg-light: #FFF9F5;
+    --bg-table-odd: #F5EDE6;
+    --bg-table-even: #FEFAF7;
+
+    /* Cores de texto - Tema Claro */
+    --text-primary: #2D2622;
+    --text-secondary: #6B5D54;
+    --text-dark: #2D2622;
+
+    /* Ajuste de borda */
+    --border-color: #C7B8AA;
 }
