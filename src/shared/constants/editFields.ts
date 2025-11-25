@@ -203,35 +203,37 @@ export const emprestimoEditFields: EditField<Emprestimo>[] = [
   { 
     key: 'jogo', 
     label: 'Nome do Jogo', 
-    type: 'text', 
+    type: 'autocomplete', 
     required: true,
-    placeholder: 'Nome do jogo emprestado...'
+    placeholder: 'Digite nome ou código de barras...',
+    dataListId: 'jogos-list-edit'
   },
   { 
     key: 'participante', 
     label: 'Nome do Participante', 
-    type: 'text', 
+    type: 'autocomplete', 
     required: true,
-    placeholder: 'Nome do participante...'
+    placeholder: 'Digite nome, documento ou RA...',
+    dataListId: 'participantes-list-edit'
   },
   { 
     key: 'horaEmprestimo', 
     label: 'Hora do Empréstimo', 
-    type: 'text', 
+    type: 'time', 
+    required: true,
     placeholder: '14:30',
     validation: (value: string) => {
-      if (value && !ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
+      if (!value) return 'Horário de empréstimo é obrigatório';
       return null;
     }
   },
   { 
     key: 'horaDevolucao', 
     label: 'Hora da Devolução', 
-    type: 'text', 
+    type: 'time', 
     placeholder: '16:30',
     validation: (value: string) => {
       if (!value) return null; // Campo opcional
-      if (!ValidationUtils.isValidTime(value)) return VALIDATION_MESSAGES.TIME_INVALID;
       return null;
     }
   },

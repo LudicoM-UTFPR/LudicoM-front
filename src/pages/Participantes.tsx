@@ -130,6 +130,7 @@ const Participantes: React.FC = () => {
         const final = { ...saved, instituicao: instituicaoObj } as Participante;
         setLocalParticipantes(prev => prev.map(p => p.id === final.id ? final : p));
         showSuccess('Participante atualizado com sucesso!');
+        closeEditModal(); // Fecha apenas em caso de sucesso
       }
     } catch (e: any) {
       if (e?.status === 409) {
@@ -180,6 +181,7 @@ const Participantes: React.FC = () => {
         const final = { ...saved, instituicao: instituicaoObj } as Participante;
         setLocalParticipantes(prev => [...prev, final]);
         showSuccess('Participante criado com sucesso!');
+        closeCreateModal(); // Fecha apenas em caso de sucesso
         return;
       }
     } catch (e: any) {
@@ -196,6 +198,7 @@ const Participantes: React.FC = () => {
     if (!createParticipante) {
       baseSalvarCriacao({ ...payload, instituicao: instituicaoObj });
       showSuccess('Participante criado localmente (modo offline).');
+      closeCreateModal(); // Fecha também para fallback local
     }
   };
 

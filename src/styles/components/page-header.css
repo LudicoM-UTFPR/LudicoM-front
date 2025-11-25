@@ -24,7 +24,7 @@
     font-weight: 700;
     font-size: 36px;
     line-height: 1.21;
-    color: #FFFFFF;
+    color: var(--text-primary);
     text-align: center;
     margin: 0;
     letter-spacing: -0.02em;

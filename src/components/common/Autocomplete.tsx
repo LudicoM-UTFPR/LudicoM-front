@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 interface AutocompleteOption {
   value: string | number | boolean;
   label: string;
+  searchValue?: string; // Valor adicional para busca (ex: código de barras)
 }
 
 interface AutocompleteProps {
@@ -19,10 +20,13 @@ export function Autocomplete({ value, onChange, options, placeholder, className 
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Filtra opções baseado no valor digitado
-    const filtered = options.filter(option =>
-      option.label.toLowerCase().includes(value.toLowerCase())
-    );
+    // Filtra opções baseado no valor digitado (busca em label e searchValue)
+    const filtered = options.filter(option => {
+      const searchTerm = value.toLowerCase();
+      const matchLabel = option.label.toLowerCase().includes(searchTerm);
+      const matchSearch = option.searchValue ? option.searchValue.toLowerCase().includes(searchTerm) : false;
+      return matchLabel || matchSearch;
+    });
     setFilteredOptions(filtered);
   }, [value, options]);
 
@@ -44,7 +48,7 @@ export function Autocomplete({ value, onChange, options, placeholder, className 
   };
 
   const handleOptionClick = (option: AutocompleteOption) => {
-    onChange(option.label);
+    onChange(String(option.value));
     setIsOpen(false);
   };
 

@@ -1,15 +1,33 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import useScrollVisibility from "../../shared/hooks/useScrollVisibility";
 import { ROUTES, UI_CONSTANTS, MESSAGES } from "../../shared/constants";
+import { ThemeIcon } from "../icons";
 
 const Header: React.FC = () => {
     const location = useLocation();
     const headerRef = useScrollVisibility(UI_CONSTANTS.SCROLL_THRESHOLD);
+    const [isDarkTheme, setIsDarkTheme] = useState<boolean>(true);
+
+    // Carrega o tema salvo no localStorage ao iniciar
+    useEffect(() => {
+        const savedTheme = localStorage.getItem('theme');
+        const isDark = savedTheme !== 'light';
+        setIsDarkTheme(isDark);
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    }, []);
 
     const handleLoginClick = useCallback((): void => {
         alert(MESSAGES.LOGIN_PLACEHOLDER);
     }, []);
+
+    const handleThemeToggle = useCallback((): void => {
+        const newTheme = !isDarkTheme;
+        setIsDarkTheme(newTheme);
+        const theme = newTheme ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    }, [isDarkTheme]);
 
     const isActive = useCallback((path: string): boolean => {
         if (path === ROUTES.HOME && location.pathname === ROUTES.HOME) return true;
@@ -73,9 +91,18 @@ const Header: React.FC = () => {
                     </Link>
                 </nav>
 
-                <button className="login-btn" onClick={handleLoginClick}>
-                    Login
-                </button>
+                <div className="header-actions">
+                    <button 
+                        className="theme-toggle-btn" 
+                        onClick={handleThemeToggle}
+                        aria-label={isDarkTheme ? "Mudar para tema claro" : "Mudar para tema escuro"}
+                    >
+                        <ThemeIcon isDark={isDarkTheme} />
+                    </button>
+                    <button className="login-btn" onClick={handleLoginClick}>
+                        Login
+                    </button>
+                </div>
             </div>
         </header>
     );

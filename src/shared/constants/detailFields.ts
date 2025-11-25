@@ -132,19 +132,21 @@ export const eventoDetailFields: DetailField<Evento>[] = [
 
 // Configuração de campos para Empréstimos
 export const emprestimoDetailFields: DetailField<Emprestimo>[] = [
-  { key: 'id', label: 'ID', type: 'text' },
-  { key: 'idJogo', label: 'ID do Jogo', type: 'text' },
   { key: 'jogo', label: 'Nome do Jogo', type: 'text' },
-  { key: 'idParticipante', label: 'ID do Participante', type: 'text' },
   { key: 'participante', label: 'Nome do Participante', type: 'text' },
-  { key: 'idEvento', label: 'ID do Evento', type: 'text' },
   { 
     key: 'horaEmprestimo', 
     label: 'Hora do Empréstimo', 
     type: 'custom',
     render: (value) => {
+      const timeStr = value as string;
+      // Se já está no formato HH:mm ou HH:mm:ss, retorna apenas HH:mm
+      if (timeStr && timeStr.includes(':')) {
+        return timeStr.substring(0, 5);
+      }
+      // Caso contrário, tenta converter de ISO
       try {
-        const date = new Date(value as string);
+        const date = new Date(timeStr);
         return date.toLocaleString('pt-BR', {
           day: '2-digit',
           month: '2-digit',
@@ -153,7 +155,7 @@ export const emprestimoDetailFields: DetailField<Emprestimo>[] = [
           minute: '2-digit'
         });
       } catch {
-        return value as string;
+        return timeStr || 'Horário inválido';
       }
     }
   },
@@ -163,8 +165,14 @@ export const emprestimoDetailFields: DetailField<Emprestimo>[] = [
     type: 'custom',
     render: (value) => {
       if (!value) return 'Não devolvido';
+      const timeStr = value as string;
+      // Se já está no formato HH:mm ou HH:mm:ss, retorna apenas HH:mm
+      if (timeStr && timeStr.includes(':')) {
+        return timeStr.substring(0, 5);
+      }
+      // Caso contrário, tenta converter de ISO
       try {
-        const date = new Date(value as string);
+        const date = new Date(timeStr);
         return date.toLocaleString('pt-BR', {
           day: '2-digit',
           month: '2-digit',
@@ -173,7 +181,7 @@ export const emprestimoDetailFields: DetailField<Emprestimo>[] = [
           minute: '2-digit'
         });
       } catch {
-        return value as string;
+        return timeStr || 'Horário inválido';
       }
     }
   },

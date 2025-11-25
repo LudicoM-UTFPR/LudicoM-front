@@ -59,6 +59,7 @@ const Jogos: React.FC = () => {
         const saved = await updateJogo(String(jogoAtualizado.id), jogoAtualizado);
         setLocalJogos(prev => prev.map(j => String(j.id) === String(saved.id) ? saved : j));
         showSuccess('Jogo atualizado com sucesso!');
+        closeEditModal(); // Fecha apenas em caso de sucesso
       }
     } catch (err: any) {
       if (err?.status === 409) {
@@ -118,11 +119,13 @@ const Jogos: React.FC = () => {
         const saved = await createJogo(novo);
         setLocalJogos(prev => [...prev, saved]);
         showSuccess('Jogo criado com sucesso!');
+        closeCreateModal(); // Fecha apenas em caso de sucesso
       } else {
         // fallback local (modo offline)
         const temp = createHandleSalvarCriacao(localJogos, setLocalJogos);
         temp(novo);
         showSuccess('Jogo criado localmente (modo offline).');
+        closeCreateModal(); // Fecha também para fallback local
       }
     } catch (err: any) {
       if (err?.status === 409) {
