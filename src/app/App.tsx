@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Header, Footer } from "../components";
-import { ToastProvider } from "../components/common";
+import { ToastProvider, AnimatedBackground } from "../components/common";
 import { ROUTES } from "../shared/constants";
 import "../styles/Main.css";
 
@@ -19,6 +19,7 @@ const App: React.FC = () => {
         <ToastProvider>
             <Router>
                 <div className="app">
+                    <AnimatedBackground />
                     <Header />
                     <main className="main-content">
                                                 <Suspense fallback={<div className="lazy-fallback">Carregando...</div>}>
