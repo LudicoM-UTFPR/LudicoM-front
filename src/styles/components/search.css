@@ -1,0 +1,183 @@
+/* ==============================================
+   SEARCH COMPONENTS
+   ============================================== 
+   
+   Componentes de busca reutilizáveis:
+   - Campo de busca com botão
+   - Estilos responsivos
+   - Usado em tabelas e outras seções
+*/
+
+/* ==============================================
+   SEARCH CONTAINER
+   ============================================== */
+
+.search-container {
+    width: 100%;
+    max-width: 576px;
+    height: 51px;
+    background-color: var(--bg-light);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.search-input {
+    flex: 1;
+    height: 100%;
+    border: none;
+    background: transparent;
+    padding-inline-start: 12px;
+    padding-inline-end: 53px;
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 24px;
+    color: var(--text-dark);
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.search-input:hover,
+.search-input:focus {
+    opacity: 0.75;
+}
+
+.search-btn {
+    position: absolute;
+    right: 12px;
+    width: 29px;
+    height: 29px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.search-btn:hover {
+    opacity: 0.7;
+}
+
+/* ==============================================
+   LEGACY CLASSES - COMPATIBILITY
+   ============================================== */
+
+/* Manter compatibilidade com código existente */
+.busca-container {
+    /* Equivale a .search-container */
+    width: 100%;
+    max-width: 576px;
+    height: 51px;
+    background-color: var(--bg-light);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.busca-input {
+    /* Equivale a .search-input */
+    flex: 1;
+    height: 100%;
+    border: none;
+    background: transparent;
+    padding-inline-start: 12px;
+    padding-inline-end: 53px;
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 24px;
+    color: var(--text-dark);
+    outline: none;
+}
+
+.busca-input::placeholder {
+    color: var(--text-secondary);
+}
+
+.busca-input:hover,
+.busca-input:focus {
+    opacity: 0.75;
+}
+
+.busca-btn {
+    /* Equivale a .search-btn */
+    position: absolute;
+    right: 12px;
+    width: 29px;
+    height: 29px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.busca-btn:hover {
+    opacity: 0.7;
+}
+
+/* ==============================================
+   RESPONSIVE DESIGN
+   ============================================== */
+
+@media (max-width: 768px) {
+
+    .search-container,
+    .busca-container {
+        height: 48px;
+        max-width: 100%;
+    }
+
+    .search-input,
+    .busca-input {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 600px) {
+
+    .search-container,
+    .busca-container {
+        height: 46px;
+    }
+
+    .search-input,
+    .busca-input {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .search-container,
+    .busca-container {
+        height: 44px;
+    }
+
+    .search-input,
+    .busca-input {
+        font-size: 14px;
+    }
+
+    .search-btn,
+    .busca-btn {
+        width: 24px;
+        height: 24px;
+    }
+
+    .search-btn svg,
+    .busca-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+}
