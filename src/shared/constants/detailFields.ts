@@ -3,7 +3,6 @@ import { Jogo, Participante, Evento, Emprestimo, Instituicao } from '../types';
 
 // Configuração de campos para Jogos
 export const jogoDetailFields: DetailField<Jogo>[] = [
-  { key: 'id', label: 'ID', type: 'text' },
   { key: 'nome', label: 'Nome do Jogo', type: 'text' },
   { key: 'nomeAlternativo', label: 'Nome Alternativo', type: 'text' },
   { key: 'anoPublicacao', label: 'Ano de Publicação', type: 'number' },
@@ -45,7 +44,6 @@ export const jogoDetailFields: DetailField<Jogo>[] = [
 
 // Configuração de campos para Participantes
 export const participanteDetailFields: DetailField<Participante>[] = [
-  { key: 'id', label: 'ID', type: 'text' },
   { key: 'nome', label: 'Nome Completo', type: 'text' },
   { key: 'email', label: 'E-mail', type: 'text' },
   { key: 'documento', label: 'Documento', type: 'text' },
@@ -195,7 +193,6 @@ export const emprestimoDetailFields: DetailField<Emprestimo>[] = [
 
 // Configuração de campos para Instituições
 export const instituicaoDetailFields: DetailField<Instituicao>[] = [
-  { key: 'uid', label: 'ID', type: 'text' },
   { key: 'nome', label: 'Nome', type: 'text' },
   { key: 'endereco', label: 'Endereço', type: 'text' }
 ];

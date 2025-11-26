@@ -127,9 +127,9 @@ const Header: React.FC = () => {
 
                 {/* Ações à direita: somente login em mobile */}
                 <div className="header-actions">
-                    <button className="login-btn" onClick={handleLoginClick}>
+                    {/* <button className="login-btn" onClick={handleLoginClick}>
                         Login
-                    </button>
+                    </button> */}
                     {/* Theme toggle fora do menu (desktop) */}
                     <button 
                         className="theme-toggle-btn theme-toggle-outside" 

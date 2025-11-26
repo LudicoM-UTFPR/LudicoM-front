@@ -10,6 +10,8 @@
     --btn-primary-hover: #D9664A;
     --btn-secondary: #457B9D;
     --btn-secondary-hover: #35607E;
+    --btn-tertiary: #2A9D8F;
+    --btn-tertiary-hover: #248B7E;
     --btn-danger: #DC3545;
     --btn-danger-hover: #C82333;
 
@@ -82,6 +84,8 @@
     --btn-primary-hover: #ED9783;
     --btn-secondary: #8BADC4;
     --btn-secondary-hover: #6D9AB8;
+    --btn-tertiary: #7DCDC0;
+    --btn-tertiary-hover: #62C4B5;
     --btn-danger: #E89BA5;
     --btn-danger-hover: #E07D8A;
 
