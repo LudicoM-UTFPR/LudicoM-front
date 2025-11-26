@@ -1,0 +1,221 @@
+/* ==============================================
+   BADGES & STATUS SYSTEM
+   ============================================== 
+   
+   Sistema reutilizável de badges e status:
+   - Status de jogos (disponível/indisponível)
+   - Contadores de abas
+   - Sistema de badges genérico
+*/
+
+/* ==============================================
+   BASE BADGE STYLES
+   ============================================== */
+
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.2;
+    min-width: 60px;
+    vertical-align: middle;
+}
+
+/* Badge Variants */
+.badge--success {
+    background-color: #66BB6A;
+    color: white;
+}
+
+.badge--danger {
+    background-color: #EF5350;
+    color: white;
+}
+
+.badge--warning {
+    background-color: #FFA726;
+    color: white;
+}
+
+.badge--info {
+    background-color: #42A5F5;
+    color: white;
+}
+
+.badge--secondary {
+    background-color: #78909C;
+    color: white;
+}
+
+.badge--primary {
+    background-color: var(--primary-color, #E76F51);
+    color: white;
+}
+
+/* Badge Sizes */
+.badge--small {
+    padding: 2px 8px;
+    font-size: 12px;
+    min-width: 40px;
+}
+
+.badge--large {
+    padding: 6px 16px;
+    font-size: 16px;
+    min-width: 80px;
+}
+
+/* ==============================================
+   SPECIFIC STATUS BADGES
+   ============================================== */
+
+/* Status dos Jogos */
+.status-jogo {
+    /* Equivale a .badge .badge--large */
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.2;
+    min-width: 80px;
+    vertical-align: middle;
+}
+
+.status-jogo.disponivel {
+    background-color: #66BB6A;
+    color: white;
+}
+
+.status-jogo.indisponivel {
+    background-color: #EF5350;
+    color: white;
+}
+
+/* Contador de Abas */
+.tab-count,
+.emp-tab-count {
+    background-color: var(--btn-primary);
+    color: var(--text-primary);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    transition: background-color var(--transition-fast);
+}
+
+/* ==============================================
+   NOTIFICATION BADGES
+   ============================================== */
+
+.notification-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #EF5350;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 20px;
+}
+
+.notification-badge--large {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    top: -10px;
+    right: -10px;
+}
+
+/* ==============================================
+   RESPONSIVE DESIGN
+   ============================================== */
+
+@media (max-width: 768px) {
+    .badge {
+        font-size: 12px;
+        padding: 3px 8px;
+        min-width: 50px;
+    }
+
+    .badge--large,
+    .status-jogo {
+        font-size: 16px;
+        padding: 4px 12px;
+        min-width: 70px;
+    }
+
+    .badge--small {
+        font-size: 10px;
+        padding: 2px 6px;
+        min-width: 30px;
+    }
+
+    .tab-count,
+    .emp-tab-count {
+        font-size: 12px;
+        padding: 1px 6px;
+        min-width: 18px;
+        height: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .badge {
+        font-size: 11px;
+        padding: 2px 6px;
+        min-width: 40px;
+    }
+
+    .badge--large,
+    .status-jogo {
+        font-size: 14px;
+        padding: 3px 10px;
+        min-width: 60px;
+    }
+
+    .badge--small {
+        font-size: 9px;
+        padding: 1px 4px;
+        min-width: 25px;
+    }
+
+    .tab-count,
+    .emp-tab-count {
+        font-size: 11px;
+        padding: 1px 5px;
+        min-width: 16px;
+        height: 16px;
+    }
+
+    .notification-badge {
+        width: 16px;
+        height: 16px;
+        font-size: 10px;
+        top: -6px;
+        right: -6px;
+    }
+
+    .notification-badge--large {
+        width: 18px;
+        height: 18px;
+        font-size: 11px;
+        top: -8px;
+        right: -8px;
+    }
+}

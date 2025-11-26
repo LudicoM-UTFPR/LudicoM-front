@@ -1,0 +1,360 @@
+/* ==============================================
+   UNIFIED BUTTON SYSTEM
+   ============================================== 
+   
+   Sistema unificado de botões usado em toda aplicação:
+   - Modais (DetailModal, EditModal, CreateModal)
+   - Tabelas (action buttons)
+   - Headers (page action button, login button)
+   - Seções (quick actions)
+   - Navegação
+*/
+
+/* ==============================================
+   BASE BUTTON STYLES
+   ============================================== */
+
+/* Classe base para todos os botões */
+.btn {
+    border: none;
+    border-radius: var(--border-radius, 5px);
+    font-family: var(--font-family, 'Inter', sans-serif);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    outline: none;
+}
+
+.btn:focus {
+    box-shadow: 0 0 0 3px rgba(231, 111, 81, 0.3);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* ==============================================
+   BUTTON SIZES
+   ============================================== */
+
+.btn--small {
+    padding: 6px 12px;
+    font-size: 14px;
+    height: 32px;
+    min-width: 80px;
+}
+
+.btn--medium {
+    padding: 8px 16px;
+    font-size: 16px;
+    height: 36px;
+    min-width: 120px;
+}
+
+.btn--large {
+    padding: 12px 24px;
+    font-size: 18px;
+    height: 44px;
+    min-width: 160px;
+}
+
+.btn--xlarge {
+    padding: 16px 32px;
+    font-size: 24px;
+    height: 48px;
+    min-width: 200px;
+}
+
+/* ==============================================
+   BUTTON VARIANTS (COLORS)
+   ============================================== */
+
+.btn--primary {
+    background-color: var(--btn-primary);
+    color: var(--text-primary, #FFFFFF);
+}
+
+.btn--primary:hover {
+    background-color: var(--btn-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover, 0 4px 12px rgba(231, 111, 81, 0.3));
+}
+
+.btn--secondary {
+    background-color: var(--btn-secondary);
+    color: var(--text-primary, #FFFFFF);
+}
+
+.btn--secondary:hover {
+    background-color: var(--btn-secondary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(42, 157, 143, 0.3);
+}
+
+.btn--tertiary {
+    background-color: #2A9D8F;
+    color: var(--text-primary, #FFFFFF);
+}
+
+.btn--tertiary:hover {
+    background-color: #248B7E;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(42, 157, 143, 0.3);
+}
+
+/* ==============================================
+   LIGHT THEME OVERRIDES
+   ============================================== */
+/* Força texto branco nos botões secondary/tertiary no tema claro */
+[data-theme="light"] .btn--secondary,
+[data-theme="light"] .btn--secondary:hover,
+[data-theme="light"] .btn--tertiary,
+[data-theme="light"] .btn--tertiary:hover {
+    color: #FFFFFF;
+}
+
+.btn--ghost {
+    background-color: transparent;
+    border: 1px solid #6C757D;
+    /* Usando o cinza sugerido */
+    color: #6C757D;
+    /* ...outros estilos... */
+    transition: all 0.2s ease-in-out;
+}
+
+.btn--ghost:hover {
+    background-color: #6C757D;
+    color: white;
+    /* O texto inverte a cor no hover */
+}
+
+.btn--danger {
+    background-color: var(--btn-danger);
+    color: var(--text-primary, #FFFFFF);
+}
+
+.btn--danger:hover {
+    background-color: var(--btn-danger-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+.btn--outline {
+    background-color: transparent;
+    border: 1px solid var(--border-color, #e0e0e0);
+    color: var(--text-secondary, #666);
+}
+
+.btn--outline:hover {
+    background-color: var(--bg-light, #f8f9fa);
+    transform: translateY(-1px);
+}
+
+.btn--ghost {
+    background-color: transparent;
+    color: var(--text-secondary, #666);
+}
+
+.btn--ghost:hover {
+    background-color: rgba(231, 111, 81, 0.1);
+    color: var(--primary-color, #E76F51);
+    transform: translateY(-1px);
+}
+
+/* ==============================================
+   SPECIFIC BUTTON COMBINATIONS
+   ============================================== */
+
+/* Botões de ação da tabela - pequenos */
+.action-btn {
+    /* Equivale a .btn .btn--small */
+    border: none;
+    border-radius: var(--border-radius, 5px);
+    font-family: var(--font-family, 'Inter', sans-serif);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    outline: none;
+    /* Small size */
+    padding: 6px 12px;
+    font-size: 14px;
+    height: 32px;
+    min-width: 80px;
+}
+
+.action-btn:focus {
+    box-shadow: 0 0 0 3px rgba(231, 111, 81, 0.3);
+}
+
+.action-btn:active {
+    transform: translateY(0);
+}
+
+.action-btn--primary {
+    background-color: var(--btn-primary);
+    color: var(--text-primary, #FFFFFF);
+}
+
+.action-btn--primary:hover {
+    background-color: var(--btn-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover, 0 4px 12px rgba(231, 111, 81, 0.3));
+}
+
+.action-btn--secondary {
+    background-color: var(--btn-secondary);
+    color: var(--text-primary, #FFFFFF);
+}
+
+.action-btn--secondary:hover {
+    background-color: var(--btn-secondary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(42, 157, 143, 0.3);
+}
+
+.action-btn--danger {
+    background-color: var(--btn-danger);
+    color: var(--text-primary, #FFFFFF);
+}
+
+.action-btn--danger:hover {
+    background-color: var(--btn-danger-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+
+
+/* Botão de login no header */
+.login-btn {
+    width: 97px;
+    height: 44px;
+    background-color: var(--btn-primary);
+    border: none;
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 29.05px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.login-btn:hover {
+    background-color: var(--btn-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.login-btn:active {
+    transform: translateY(0);
+}
+
+/* Botão fechar modal */
+.close-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary, #666);
+    padding: 4px;
+    line-height: 1;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.close-button:hover {
+    background: var(--primary-hover);
+    color: var(--text-primary);
+}
+
+
+
+/* ==============================================
+   RESPONSIVE DESIGN
+   ============================================== */
+
+@media (max-width: 768px) {
+    .btn--xlarge {
+        padding: 12px 24px;
+        font-size: 18px;
+        height: 44px;
+        min-width: 160px;
+    }
+
+    .btn--large {
+        padding: 10px 20px;
+        font-size: 16px;
+        height: 40px;
+        min-width: 140px;
+    }
+
+    .btn--medium {
+        padding: 8px 16px;
+        font-size: 14px;
+        height: 36px;
+        min-width: 100px;
+    }
+
+    .login-btn {
+        width: 80px;
+        height: 36px;
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .btn--xlarge {
+        padding: 10px 20px;
+        font-size: 16px;
+        height: 40px;
+        min-width: 140px;
+    }
+
+    .btn--large {
+        padding: 8px 16px;
+        font-size: 14px;
+        height: 36px;
+        min-width: 120px;
+    }
+
+    .btn--medium {
+        padding: 6px 12px;
+        font-size: 12px;
+        height: 32px;
+        min-width: 80px;
+    }
+
+    .action-btn {
+        padding: 4px 8px;
+        font-size: 12px;
+        height: 28px;
+        min-width: 60px;
+    }
+
+    .login-btn {
+        width: 70px;
+        height: 32px;
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 400px) {
+    .btn--large { padding: 6px 12px; font-size: 13px; height: 34px; min-width: 110px; }
+    .btn--medium { padding: 6px 10px; font-size: 12px; height: 30px; min-width: 70px; }
+    .action-btn { padding: 4px 8px; font-size: 11px; height: 26px; min-width: 56px; }
+    .login-btn { width: 64px; height: 30px; font-size: 16px; }
+}
