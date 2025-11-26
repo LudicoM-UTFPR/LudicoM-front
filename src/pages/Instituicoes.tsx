@@ -165,6 +165,7 @@ const Instituicoes: React.FC = () => {
         searchPlaceholder="Buscar por instituição..."
         searchFields={['nome', 'endereco'] as any}
         tableTitle="Instituições Cadastradas"
+        emptyMessage="Nenhuma instituição encontrada."
       />
 
       {loading && <p>Carregando instituições...</p>}

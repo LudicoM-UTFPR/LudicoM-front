@@ -21,6 +21,7 @@
 @import './components/modal.css';
 @import './components/toast.css';
 @import './components/autocomplete.css';
+@import './components/empty-state.css';
 
 /* Responsive Styles */
 @import './base/responsive.css';

@@ -41,7 +41,7 @@ const Home: React.FC = () => {
                             if (p.id) participantesMap.set(String(p.id), p.nome);
                         });
                     } catch (err) {
-                        // Se falhar, ignora e segue com os locais
+                        console.error('Falha ao buscar participantes faltantes', err);
                     }
                 }
 
@@ -210,6 +210,7 @@ const Home: React.FC = () => {
                 searchPlaceholder="Buscar por jogo ou participante..."
                 searchFields={["jogo", "participante"]}
                 tableTitle="Empréstimos Ativos"
+                emptyMessage="Nenhum empréstimo ativo encontrado."
             />
             <CreateModal
                 isOpen={isCreateModalOpen}

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { SearchIcon } from '../icons';
+import { EmptyState } from '../common';
 import { filterByMultipleFields, escapeHtml, handleError } from '../../shared/utils';
 import { TableColumn, TableAction } from '../../shared/types';
 
@@ -10,6 +11,7 @@ interface GenericTableProps<T> {
   searchPlaceholder?: string;
   searchFields: (keyof T)[];
   tableTitle: string;
+  emptyMessage?: string;
 }
 
 const GenericTable = <T extends { id: number | string }>({
@@ -18,7 +20,8 @@ const GenericTable = <T extends { id: number | string }>({
   actions = [],
   searchPlaceholder = "Buscar...",
   searchFields,
-  tableTitle
+  tableTitle,
+  emptyMessage = "Nenhum dado encontrado."
 }: GenericTableProps<T>): React.ReactElement => {
   const [filtro, setFiltro] = useState<string>('');
 
@@ -86,81 +89,89 @@ const GenericTable = <T extends { id: number | string }>({
 
   return (
     <section className="tabela-emprestimo">
-      {/* Campo de Busca */}
-      <div className="busca-container">
-        <input
-          type="text"
-          className="busca-input"
-          placeholder={searchPlaceholder}
-          value={filtro}
-          onChange={handleFiltroChange}
-          onKeyPress={handleKeyPress}
-        />
-        <button className="busca-btn" onClick={handleBuscaClick}>
-          <SearchIcon />
-        </button>
-      </div>
+      {/* Campo de Busca - oculta quando não há dados */}
+      {data.length > 0 && (
+        <div className="busca-container">
+          <input
+            type="text"
+            className="busca-input"
+            placeholder={searchPlaceholder}
+            value={filtro}
+            onChange={handleFiltroChange}
+            onKeyPress={handleKeyPress}
+          />
+          <button className="busca-btn" onClick={handleBuscaClick}>
+            <SearchIcon />
+          </button>
+        </div>
+      )}
 
       {/* Tabela */}
-      <div className="tabela-wrapper">
-        <table className="tabela">
-          <caption className="tabela-titulo">
-            {tableTitle}
-          </caption>
-          <thead className="tabela-head">
-            <tr className="tabela-header-row">
-              {columns.map((column) => (
-                <th key={String(column.key)} className="tabela-header">
-                  {column.label}
-                </th>
-              ))}
-              {actions.length > 0 && (
-                <th className="tabela-header">Ações</th>
-              )}
-            </tr>
-          </thead>
-          <tbody className="tabela-body">
-            {dadosFiltrados.map((item) => (
-              <tr
-                key={item.id}
-                className="tabela-row"
-                data-id={item.id}
-              >
-                {columns.map((column, columnIndex) => (
-                  <td
-                    key={String(column.key)}
-                    className="tabela-cell"
-                    title={String(item[column.key] || '')}
-                  >
-                    {renderCellContent(column, item, columnIndex < 4)}
-                  </td>
+      {dadosFiltrados.length === 0 ? (
+        <EmptyState 
+          message={filtro.trim() ? "Nenhum resultado encontrado para sua busca." : emptyMessage}
+        />
+      ) : (
+        <div className="tabela-wrapper">
+          <table className="tabela">
+            <caption className="tabela-titulo">
+              {tableTitle}
+            </caption>
+            <thead className="tabela-head">
+              <tr className="tabela-header-row">
+                {columns.map((column) => (
+                  <th key={String(column.key)} className="tabela-header">
+                    {column.label}
+                  </th>
                 ))}
                 {actions.length > 0 && (
-                  <td className="tabela-cell">
-                    <div className="acoes-grupo">
-                      {actions.map((action, index) => (
-                        <button
-                          key={index}
-                          className={getActionButtonClass(action.variant)}
-                          onClick={() => {
-                            try {
-                              action.onClick(item);
-                            } catch (error) {
-                              handleError(error, 'GenericTable - ActionClick');
-                            }
-                          }}
-                        >
-                          {action.label}
-                        </button>
-                      ))}
-                    </div>
-                  </td>
+                  <th className="tabela-header">Ações</th>
                 )}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="tabela-body">
+              {dadosFiltrados.map((item) => (
+                <tr
+                  key={item.id}
+                  className="tabela-row"
+                  data-id={item.id}
+                >
+                  {columns.map((column, columnIndex) => (
+                    <td
+                      key={String(column.key)}
+                      className="tabela-cell"
+                      title={String(item[column.key] || '')}
+                    >
+                      {renderCellContent(column, item, columnIndex < 4)}
+                    </td>
+                  ))}
+                  {actions.length > 0 && (
+                    <td className="tabela-cell">
+                      <div className="acoes-grupo">
+                        {actions.map((action, index) => (
+                          <button
+                            key={index}
+                            className={getActionButtonClass(action.variant)}
+                            onClick={() => {
+                              try {
+                                action.onClick(item);
+                              } catch (error) {
+                                handleError(error, 'GenericTable - ActionClick');
+                              }
+                            }}
+                          >
+                            {action.label}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 };

@@ -4,3 +4,4 @@ export { Toast } from './Toast';
 export { ToastProvider, useToast } from './ToastContainer';
 export { Autocomplete } from './Autocomplete';
 export { default as AnimatedBackground } from './AnimatedBackground';
+export { default as EmptyState } from './EmptyState';
