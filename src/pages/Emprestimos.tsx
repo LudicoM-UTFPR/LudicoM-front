@@ -3,18 +3,20 @@ import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '.
 import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { useToast } from '../components/common';
 import { emprestimoDetailFields, emprestimoEditFields, emprestimoCreateFields, MESSAGES, EMPRESTIMO_COLUMNS, EMPRESTIMO_DETAIL_COLUMNS } from '../shared/constants';
-import { useJogos, useParticipantes, useEventos, useEmprestimos } from '../shared/hooks';
+import { participanteCreateFields, instituicaoCreateFields } from '../shared/constants/createFields';
+import { useJogos, useParticipantes, useEventos, useEmprestimos, useInstituicoes } from '../shared/hooks';
 import { createEmprestimo, updateEmprestimo, deleteEmprestimo, devolverEmprestimo } from '../shared/services/emprestimosService';
 import type { CreateField } from '../components/modals/CreateModal';
 import type { EditField } from '../components/modals/EditModal';
 import { handleError, formatTimeHHMM } from '../shared/utils';
-import type { Emprestimo, TableAction } from '../shared/types';
+import type { Emprestimo, TableAction, Instituicao } from '../shared/types';
 
 const Emprestimos: React.FC = () => {
   const { jogos, refetchJogos } = useJogos();
-  const { participantes } = useParticipantes();
+  const { participantes, createParticipante: createParticipanteHook } = useParticipantes();
   const { eventos, refetchEventos } = useEventos();
   const { emprestimos, refetchEmprestimos } = useEmprestimos();
+  const { instituicoes } = useInstituicoes();
   const { showErrorList, showError, showSuccess } = useToast();
   const [emprestimosAtivos, setEmprestimosAtivos] = useState<Emprestimo[]>([]);
   const [historicoEmprestimos, setHistoricoEmprestimos] = useState<Emprestimo[]>([]);
@@ -30,6 +32,9 @@ const Emprestimos: React.FC = () => {
   // Estados para modal de confirmação de devolução
   const [confirmReturnOpen, setConfirmReturnOpen] = useState(false);
   const [emprestimoParaDevolver, setEmprestimoParaDevolver] = useState<Emprestimo | null>(null);
+  // Estados para modal de criar participante inline
+  const [showCreateParticipante, setShowCreateParticipante] = useState(false);
+  const [newParticipanteNamePrefill, setNewParticipanteNamePrefill] = useState<string>('');
 
   // Processa empréstimos do hook para separar ativos e histórico
   useEffect(() => {
@@ -373,6 +378,62 @@ const Emprestimos: React.FC = () => {
     setEmprestimoParaExcluir(null);
   }, [emprestimoParaExcluir, deleteContext, handleExcluirAtivo, handleExcluirHistorico]);
 
+  // Criação inline de participante a partir do modal de empréstimo
+  const handleSalvarNovoParticipante = async (novo: any) => {
+    try {
+      // Resolve instituição se fornecida
+      let instituicaoObj: Instituicao | undefined = undefined;
+      if (novo.instituicao) {
+        instituicaoObj = instituicoes.find((i: Instituicao) => i.nome === novo.instituicao);
+      }
+      // Validação condicional RA
+      if (instituicaoObj && !novo.ra) {
+        showError('RA é obrigatório quando instituição é informada.');
+        return;
+      }
+      // Validação de unicidade
+      const errors: Record<string, string> = {};
+      if (novo.email && participantes.some(p => p.email === novo.email)) {
+        errors.email = 'Email já cadastrado.';
+      }
+      if (novo.documento && participantes.some(p => p.documento === novo.documento)) {
+        errors.documento = 'Documento já cadastrado.';
+      }
+      if (novo.ra && participantes.some(p => p.ra === novo.ra)) {
+        errors.ra = 'RA já cadastrado.';
+      }
+      if (Object.keys(errors).length) {
+        showErrorList(errors);
+        return;
+      }
+
+      const payload: any = {
+        nome: novo.nome,
+        email: novo.email,
+        documento: novo.documento,
+        ra: novo.ra || '',
+        idInstituicao: instituicaoObj ? instituicaoObj.uid : undefined
+      };
+
+      // Cria o participante via hook (atualiza lista local automaticamente)
+      const saved = await createParticipanteHook(payload);
+      
+      setShowCreateParticipante(false);
+      setNewParticipanteNamePrefill(saved.nome);
+      showSuccess('Participante criado com sucesso!');
+    } catch (e: any) {
+      handleError(e, 'Emprestimos - criar participante inline');
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning');
+        else showError(e?.message || 'Conflito ao criar participante.');
+      } else if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao criar participante.');
+      }
+    }
+  };
+
 
 
   // Ações para empréstimos ativos
@@ -391,6 +452,14 @@ const Emprestimos: React.FC = () => {
 
   const countAtivos = emprestimosAtivos.length;
   const countHistorico = historicoEmprestimos.length;
+
+  // Campos para criar participante inline com lista de instituições
+  const participanteCreateFieldsWithOptions = useMemo(() => {
+    return participanteCreateFields.map((f: any) => f.key === 'instituicao' ? {
+      ...f,
+      options: instituicoes.map((i: Instituicao) => ({ value: i.nome, label: i.nome }))
+    } : f);
+  }, [instituicoes, showCreateParticipante]);
 
   // Campos de criação com lista de jogos e participantes
   const emprestimoCreateFieldsWithOptions: CreateField<Emprestimo>[] = useMemo(() => {
@@ -631,6 +700,14 @@ const Emprestimos: React.FC = () => {
         fields={emprestimoCreateFieldsWithOptions}
         title="Registrar Novo Empréstimo"
         infoMessage={eventoAtualInfo}
+        inlineFieldActions={{
+          participante: {
+            label: '+',
+            title: 'Criar novo participante',
+            onClick: () => setShowCreateParticipante(true)
+          }
+        }}
+        prefill={newParticipanteNamePrefill ? { participante: newParticipanteNamePrefill } as any : undefined}
       />
       <CreateModal
         isOpen={isReturnModalOpen}
@@ -638,6 +715,13 @@ const Emprestimos: React.FC = () => {
         onSave={handleSalvarDevolucao}
         fields={emprestimoReturnFields}
         title="Registrar Devolução"
+      />
+      <CreateModal
+        isOpen={showCreateParticipante}
+        onClose={() => setShowCreateParticipante(false)}
+        onSave={handleSalvarNovoParticipante as any}
+        fields={participanteCreateFieldsWithOptions as any}
+        title="Criar Participante"
       />
       <ConfirmModal
         isOpen={confirmReturnOpen}
