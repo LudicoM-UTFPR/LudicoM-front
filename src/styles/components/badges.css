@@ -99,8 +99,8 @@
 /* Contador de Abas */
 .tab-count,
 .emp-tab-count {
-    background-color: var(--primary-color, #E76F51);
-    color: var(--text-primary, #FFFFFF);
+    background-color: var(--btn-primary);
+    color: var(--text-primary);
     padding: 2px 8px;
     border-radius: 999px;
     font-weight: 700;
@@ -110,6 +110,7 @@
     justify-content: center;
     min-width: 20px;
     height: 20px;
+    transition: background-color var(--transition-fast);
 }
 
 /* ==============================================

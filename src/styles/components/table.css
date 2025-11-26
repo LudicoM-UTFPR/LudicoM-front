@@ -149,3 +149,22 @@
 
 
 /* Status movidos para badges.css */
+
+/* =============================
+   RESPONSIVE AJUSTES EXTRAS
+   ============================= */
+@media (max-width: 600px) {
+    .tabela-cell, .tabela-cell-content {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: initial;
+        line-height: 1.2;
+        word-break: break-word;
+    }
+    .tabela-cell-content { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+    .tabela-cell, .tabela-header { padding: 8px 10px; }
+    .tabela-row { height: auto; }
+}

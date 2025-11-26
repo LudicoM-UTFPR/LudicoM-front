@@ -153,14 +153,7 @@ export const eventoEditFields: EditField<Evento>[] = [
     label: 'Data do Evento', 
     type: 'date', 
     required: true,
-    validation: (value: string) => {
-      const selectedDate = new Date(value);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (selectedDate < today) return 'Data não pode ser anterior a hoje';
-      return null;
-    }
+    // Validação removida (permitir editar para datas anteriores / retroativas)
   },
   { 
     key: 'instituicao', 

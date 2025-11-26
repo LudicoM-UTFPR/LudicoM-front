@@ -71,6 +71,8 @@
     /* Z-index */
     --z-header: 1000;
     --z-modal: 1001;
+    /* Altura padrão do header para layout dinâmico */
+    --header-height: 64px;
 }
 
 /* Tema Claro */

@@ -3,6 +3,7 @@ import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '.
 import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { useToast } from '../components/common';
 import { eventoDetailFields, eventoEditFields, eventoCreateFields, EVENTO_COLUMNS } from '../shared/constants';
+import { instituicaoCreateFields } from '../shared/constants/createFields';
 import { useCrudOperations, useEventos, useInstituicoes } from '../shared/hooks';
 import { handleError, ensureHHMMSS } from '../shared/utils';
 import type { Evento, TableAction } from '../shared/types';
@@ -11,11 +12,13 @@ import type { EditField } from '../components/modals/EditModal';
 
 const Eventos: React.FC = () => {
   const { eventos: remoteEventos, loading, error, createEvento, updateEvento, deleteEvento } = useEventos();
-  const { instituicoes } = useInstituicoes();
+  const { instituicoes, createInstituicao } = useInstituicoes();
   const { showErrorList, showError, showSuccess, showWarning } = useToast();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState<Evento | null>(null);
+  const [showCreateInstituicao, setShowCreateInstituicao] = useState(false);
+  const [newInstituicaoNamePrefill, setNewInstituicaoNamePrefill] = useState<string>('');
   
   // Hook personalizado para operações CRUD
   const {
@@ -162,6 +165,25 @@ const Eventos: React.FC = () => {
     }
   };
 
+  // Criação inline de instituição a partir do modal de evento (fora da função de criar evento)
+  const handleSalvarNovaInstituicao = async (nova: any) => {
+    if (!createInstituicao) return;
+    try {
+      const saved = await createInstituicao({ nome: nova.nome, endereco: nova.endereco || '' });
+      setShowCreateInstituicao(false);
+      setNewInstituicaoNamePrefill(saved.nome);
+      showSuccess('Instituição criada com sucesso!');
+    } catch (e: any) {
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning'); else showWarning(e?.message || 'Conflito ao criar instituição.');
+      } else if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao criar instituição.');
+      }
+    }
+  };
+
   const actions: TableAction<Evento>[] = [
     { label: 'Detalhes', onClick: handleDetalhes, variant: 'primary' },
     { label: 'Editar', onClick: handleEditar, variant: 'secondary' },
@@ -208,9 +230,19 @@ const Eventos: React.FC = () => {
     <div className="page-container">
       <PageHeader 
         title="Gerenciamento de Eventos"
-        buttonText="Criar Evento"
-        onButtonClick={handleCriar}
+        showButton={false}
       />
+      <section style={{ marginBottom: '24px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <div className="acoes-buttons">
+          <button
+            type="button"
+            className="btn btn--xlarge"
+            onClick={handleCriar}
+          >
+            Criar Evento
+          </button>
+        </div>
+      </section>
       <GenericTable<Evento>
         data={eventos}
         columns={EVENTO_COLUMNS}
@@ -246,7 +278,22 @@ const Eventos: React.FC = () => {
         onClose={closeCreateModal}
         onSave={handleSalvarCriacao}
         fields={eventoCreateFieldsWithOptions}
+        inlineFieldActions={{
+          instituicao: {
+            label: '+',
+            title: 'Criar nova instituição',
+            onClick: () => setShowCreateInstituicao(true)
+          }
+        }}
+        prefill={newInstituicaoNamePrefill ? { instituicao: newInstituicaoNamePrefill } as any : undefined}
         title="Criar Novo Evento"
+      />
+      <CreateModal
+        isOpen={showCreateInstituicao}
+        onClose={() => setShowCreateInstituicao(false)}
+        onSave={handleSalvarNovaInstituicao as any}
+        fields={instituicaoCreateFields as any}
+        title="Criar Instituição"
       />
       <ConfirmModal
         isOpen={confirmOpen}

@@ -22,7 +22,6 @@
     flex-direction: column;
     align-items: center;
     gap: 48px;
-    padding-block-start: 64px;
     padding-block-end: 50px;
     margin-inline: auto;
 }

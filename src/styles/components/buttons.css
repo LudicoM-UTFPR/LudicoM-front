@@ -106,6 +106,17 @@
     box-shadow: 0 4px 12px rgba(42, 157, 143, 0.3);
 }
 
+/* ==============================================
+   LIGHT THEME OVERRIDES
+   ============================================== */
+/* Força texto branco nos botões secondary/tertiary no tema claro */
+[data-theme="light"] .btn--secondary,
+[data-theme="light"] .btn--secondary:hover,
+[data-theme="light"] .btn--tertiary,
+[data-theme="light"] .btn--tertiary:hover {
+    color: #FFFFFF;
+}
+
 .btn--ghost {
     background-color: transparent;
     border: 1px solid #6C757D;
@@ -339,4 +350,11 @@
         height: 32px;
         font-size: 18px;
     }
+}
+
+@media (max-width: 400px) {
+    .btn--large { padding: 6px 12px; font-size: 13px; height: 34px; min-width: 110px; }
+    .btn--medium { padding: 6px 10px; font-size: 12px; height: 30px; min-width: 70px; }
+    .action-btn { padding: 4px 8px; font-size: 11px; height: 26px; min-width: 56px; }
+    .login-btn { width: 64px; height: 30px; font-size: 16px; }
 }

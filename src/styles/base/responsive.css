@@ -244,13 +244,17 @@
 /* Mobile */
 @media (max-width: 480px) {
     .header-container {
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        gap: 8px;
     }
 
     .logo {
-        width: 120px;
-        height: 40px;
+        width: 110px;
+        height: 38px;
+        margin: 0 auto;
     }
 
     .nav {
@@ -264,8 +268,9 @@
     }
 
     .login-btn {
-        width: 100%;
-        max-width: 200px;
+        width: 72px;
+        height: 34px;
+        font-size: 16px;
     }
 
     .welcome-title,

@@ -6,15 +6,18 @@ export const AUTH_CONFIG = {
 
 // Função para gerar o header de autenticação
 export function getAuthHeaders(): HeadersInit {
+    // Fallback: se não houver credenciais, retorna apenas Content-Type e avisa no console.
     if (!AUTH_CONFIG.username || !AUTH_CONFIG.password) {
-        console.error('Credenciais de autenticação não encontradas no arquivo .env');
-        throw new Error('Credenciais de autenticação não configuradas');
+        if (process.env.NODE_ENV === 'development') {
+            console.warn('[authService] Credenciais ausentes. Usando fallback sem Authorization. Configure REACT_APP_AUTH_USERNAME e REACT_APP_AUTH_PASSWORD para habilitar autenticação.');
+        }
+        return {
+            'Content-Type': 'application/json'
+        };
     }
     const base64Credentials = btoa(`${AUTH_CONFIG.username}:${AUTH_CONFIG.password}`);
-    const headers = {
+    return {
         'Authorization': `Basic ${base64Credentials}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
     };
-
-    return headers;
 }

@@ -1,19 +1,22 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '../components';
+import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { useToast } from '../components/common';
 import { emprestimoDetailFields, emprestimoEditFields, emprestimoCreateFields, MESSAGES, EMPRESTIMO_COLUMNS, EMPRESTIMO_DETAIL_COLUMNS } from '../shared/constants';
-import { useJogos, useParticipantes, useEventos, useEmprestimos } from '../shared/hooks';
+import { participanteCreateFields, instituicaoCreateFields } from '../shared/constants/createFields';
+import { useJogos, useParticipantes, useEventos, useEmprestimos, useInstituicoes } from '../shared/hooks';
 import { createEmprestimo, updateEmprestimo, deleteEmprestimo, devolverEmprestimo } from '../shared/services/emprestimosService';
 import type { CreateField } from '../components/modals/CreateModal';
 import type { EditField } from '../components/modals/EditModal';
 import { handleError, formatTimeHHMM } from '../shared/utils';
-import type { Emprestimo, TableAction } from '../shared/types';
+import type { Emprestimo, TableAction, Instituicao } from '../shared/types';
 
 const Emprestimos: React.FC = () => {
   const { jogos, refetchJogos } = useJogos();
-  const { participantes } = useParticipantes();
+  const { participantes, createParticipante: createParticipanteHook } = useParticipantes();
   const { eventos, refetchEventos } = useEventos();
   const { emprestimos, refetchEmprestimos } = useEmprestimos();
+  const { instituicoes } = useInstituicoes();
   const { showErrorList, showError, showSuccess } = useToast();
   const [emprestimosAtivos, setEmprestimosAtivos] = useState<Emprestimo[]>([]);
   const [historicoEmprestimos, setHistoricoEmprestimos] = useState<Emprestimo[]>([]);
@@ -22,6 +25,16 @@ const Emprestimos: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  // Estados para modal de confirmação de exclusão
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [emprestimoParaExcluir, setEmprestimoParaExcluir] = useState<Emprestimo | null>(null);
+  const [deleteContext, setDeleteContext] = useState<'ativo' | 'historico'>('ativo');
+  // Estados para modal de confirmação de devolução
+  const [confirmReturnOpen, setConfirmReturnOpen] = useState(false);
+  const [emprestimoParaDevolver, setEmprestimoParaDevolver] = useState<Emprestimo | null>(null);
+  // Estados para modal de criar participante inline
+  const [showCreateParticipante, setShowCreateParticipante] = useState(false);
+  const [newParticipanteNamePrefill, setNewParticipanteNamePrefill] = useState<string>('');
 
   // Processa empréstimos do hook para separar ativos e histórico
   useEffect(() => {
@@ -139,24 +152,11 @@ const Emprestimos: React.FC = () => {
 
   // Handlers para empréstimos ativos
   const handleExcluirAtivo = useCallback(async (emprestimo: Emprestimo) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o empréstimo?\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}`)) return;
-    
     try {
       await deleteEmprestimo(String(emprestimo.id));
-
-      // Verifica se existem outros empréstimos ativos para o mesmo jogo ANTES de remover
-      const jogoIdRef = String(emprestimo.idJogo || '');
-      const existeOutroAtivoMesmoJogo = emprestimosAtivos.some(e => e.id !== emprestimo.id && !e.isDevolvido && (
-        (jogoIdRef && String(e.idJogo || '') === jogoIdRef) || e.jogo === emprestimo.jogo
-      ));
-
       setEmprestimosAtivos(prevEmprestimos => prevEmprestimos.filter(e => String(e.id) !== String(emprestimo.id)));
-
-      // Backend já atualiza a disponibilidade do jogo automaticamente
-      // Apenas recarrega as listas para refletir as mudanças
       if (refetchJogos) refetchJogos();
       if (refetchEmprestimos) refetchEmprestimos();
-
       showSuccess('Empréstimo excluído com sucesso!');
     } catch (e: any) {
       handleError(e, 'Emprestimos - delete');
@@ -198,10 +198,7 @@ const Emprestimos: React.FC = () => {
   }, [jogos, refetchJogos, refetchEmprestimos, showError, showErrorList, showSuccess]);
 
   const handleDevolver = useCallback(async (emprestimo: Emprestimo) => {
-    if (!window.confirm(`${MESSAGES.CONFIRM_RETURN}\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}\nHorário: ${emprestimo.horario}`)) return;
-
     try {
-      // Localiza jogo para obter código de barras
       const jogoObj = jogos.find(j => (emprestimo.idJogo && String(j.id) === String(emprestimo.idJogo)) || j.nome === emprestimo.jogo);
       if (!jogoObj) {
         showError('Jogo não encontrado na lista local.');
@@ -211,21 +208,28 @@ const Emprestimos: React.FC = () => {
         showError('Jogo sem código de barras cadastrado. Não é possível devolver pela API.');
         return;
       }
-
-      // Backend processa toda a lógica: encontra empréstimo ativo, atualiza horaDevolucao,
-      // marca isDevolvido=true e atualiza disponibilidade do jogo
       await devolverEmprestimo(String(jogoObj.codigoDeBarras));
-
-      // Recarrega caches para refletir mudanças do backend
       if (refetchJogos) refetchJogos();
       if (refetchEmprestimos) refetchEmprestimos();
-
       showSuccess('Empréstimo devolvido com sucesso!');
     } catch (e: any) {
       handleError(e, 'Emprestimos - devolver (novo endpoint)');
       if (e?.errors) showErrorList(e.errors); else showError(e?.message || 'Erro ao devolver empréstimo');
     }
   }, [showError, showErrorList, showSuccess, jogos, refetchJogos, refetchEmprestimos]);
+
+  // Abre modal de confirmação de devolução
+  const askDevolver = useCallback((emprestimo: Emprestimo) => {
+    setEmprestimoParaDevolver(emprestimo);
+    setConfirmReturnOpen(true);
+  }, []);
+
+  const confirmDevolver = useCallback(async () => {
+    if (!emprestimoParaDevolver) return;
+    await handleDevolver(emprestimoParaDevolver);
+    setConfirmReturnOpen(false);
+    setEmprestimoParaDevolver(null);
+  }, [emprestimoParaDevolver, handleDevolver]);
 
   // Handlers para histórico de empréstimos
   const handleDetalhesHistorico = useCallback((emprestimo: Emprestimo) => {
@@ -333,15 +337,10 @@ const Emprestimos: React.FC = () => {
   }, [jogos, participantes, eventos, showError, showErrorList, showSuccess]);
 
   const handleExcluirHistorico = useCallback(async (emprestimo: Emprestimo) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o empréstimo do histórico?\n\nJogo: ${emprestimo.jogo}\nParticipante: ${emprestimo.participante}`)) return;
-    
     try {
       await deleteEmprestimo(String(emprestimo.id));
       setHistoricoEmprestimos(prevHistorico => prevHistorico.filter(e => String(e.id) !== String(emprestimo.id)));
-      
-      // Atualiza cache de empréstimos
       if (refetchEmprestimos) refetchEmprestimos();
-      
       setIsModalOpen(false);
       showSuccess('Empréstimo excluído com sucesso!');
     } catch (e: any) {
@@ -354,24 +353,113 @@ const Emprestimos: React.FC = () => {
     }
   }, [showError, showErrorList, showSuccess]);
 
+  // Abre modal de confirmação para empréstimo ativo
+  const askExcluirAtivo = useCallback((emprestimo: Emprestimo) => {
+    setDeleteContext('ativo');
+    setEmprestimoParaExcluir(emprestimo);
+    setConfirmOpen(true);
+  }, []);
+
+  // Abre modal de confirmação para empréstimo histórico
+  const askExcluirHistorico = useCallback((emprestimo: Emprestimo) => {
+    setDeleteContext('historico');
+    setEmprestimoParaExcluir(emprestimo);
+    setConfirmOpen(true);
+  }, []);
+
+  const confirmExcluir = useCallback(async () => {
+    if (!emprestimoParaExcluir) return;
+    if (deleteContext === 'ativo') {
+      await handleExcluirAtivo(emprestimoParaExcluir);
+    } else {
+      await handleExcluirHistorico(emprestimoParaExcluir);
+    }
+    setConfirmOpen(false);
+    setEmprestimoParaExcluir(null);
+  }, [emprestimoParaExcluir, deleteContext, handleExcluirAtivo, handleExcluirHistorico]);
+
+  // Criação inline de participante a partir do modal de empréstimo
+  const handleSalvarNovoParticipante = async (novo: any) => {
+    try {
+      // Resolve instituição se fornecida
+      let instituicaoObj: Instituicao | undefined = undefined;
+      if (novo.instituicao) {
+        instituicaoObj = instituicoes.find((i: Instituicao) => i.nome === novo.instituicao);
+      }
+      // Validação condicional RA
+      if (instituicaoObj && !novo.ra) {
+        showError('RA é obrigatório quando instituição é informada.');
+        return;
+      }
+      // Validação de unicidade
+      const errors: Record<string, string> = {};
+      if (novo.email && participantes.some(p => p.email === novo.email)) {
+        errors.email = 'Email já cadastrado.';
+      }
+      if (novo.documento && participantes.some(p => p.documento === novo.documento)) {
+        errors.documento = 'Documento já cadastrado.';
+      }
+      if (novo.ra && participantes.some(p => p.ra === novo.ra)) {
+        errors.ra = 'RA já cadastrado.';
+      }
+      if (Object.keys(errors).length) {
+        showErrorList(errors);
+        return;
+      }
+
+      const payload: any = {
+        nome: novo.nome,
+        email: novo.email,
+        documento: novo.documento,
+        ra: novo.ra || '',
+        idInstituicao: instituicaoObj ? instituicaoObj.uid : undefined
+      };
+
+      // Cria o participante via hook (atualiza lista local automaticamente)
+      const saved = await createParticipanteHook(payload);
+      
+      setShowCreateParticipante(false);
+      setNewParticipanteNamePrefill(saved.nome);
+      showSuccess('Participante criado com sucesso!');
+    } catch (e: any) {
+      handleError(e, 'Emprestimos - criar participante inline');
+      if (e?.status === 409) {
+        if (e?.errors) showErrorList(e.errors, 'warning');
+        else showError(e?.message || 'Conflito ao criar participante.');
+      } else if (e?.errors) {
+        showErrorList(e.errors);
+      } else {
+        showError(e?.message || 'Erro ao criar participante.');
+      }
+    }
+  };
+
 
 
   // Ações para empréstimos ativos
   const actionsAtivos: TableAction<Emprestimo>[] = [
-    { label: 'Devolver', onClick: handleDevolver, variant: 'primary' },
-    { label: 'Excluir', onClick: handleExcluirAtivo, variant: 'danger' }
+    { label: 'Devolver', onClick: askDevolver, variant: 'primary' },
+    { label: 'Excluir', onClick: askExcluirAtivo, variant: 'danger' }
   ];
 
   // Ações para histórico de empréstimos
   const actionsHistorico: TableAction<Emprestimo>[] = [
     { label: 'Detalhes', onClick: handleDetalhesHistorico, variant: 'primary' },
     { label: 'Editar', onClick: handleEditarHistorico, variant: 'secondary' },
-    { label: 'Excluir', onClick: handleExcluirHistorico, variant: 'danger' }
+    { label: 'Excluir', onClick: askExcluirHistorico, variant: 'danger' }
   ];
   const [activeTab, setActiveTab] = React.useState<'ativos' | 'historico'>('ativos');
 
   const countAtivos = emprestimosAtivos.length;
   const countHistorico = historicoEmprestimos.length;
+
+  // Campos para criar participante inline com lista de instituições
+  const participanteCreateFieldsWithOptions = useMemo(() => {
+    return participanteCreateFields.map((f: any) => f.key === 'instituicao' ? {
+      ...f,
+      options: instituicoes.map((i: Instituicao) => ({ value: i.nome, label: i.nome }))
+    } : f);
+  }, [instituicoes, showCreateParticipante]);
 
   // Campos de criação com lista de jogos e participantes
   const emprestimoCreateFieldsWithOptions: CreateField<Emprestimo>[] = useMemo(() => {
@@ -509,18 +597,27 @@ const Emprestimos: React.FC = () => {
     <div className="page-container">
       <PageHeader 
         title="Gerenciamento de Empréstimos"
-        buttonText="Registrar Empréstimo"
-        onButtonClick={handleRegistrarEmprestimo}
+        showButton={false}
       />
-      <div className="page-actions" style={{ display:'flex', gap:'0.75rem', marginBottom:'1rem' }}>
-        <button
-          type="button"
-          className="btn btn--medium btn--secondary"
-          onClick={handleRegistrarDevolucao}
-        >
-          Registrar Devolução
-        </button>
-      </div>
+      {/* Ações principais em estilo de Ações Rápidas (cinza com hover laranja) */}
+      <section style={{ marginBottom: '24px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <div className="acoes-buttons">
+          <button
+            type="button"
+            className="btn btn--xlarge"
+            onClick={handleRegistrarEmprestimo}
+          >
+            Registrar Empréstimo
+          </button>
+          <button
+            type="button"
+            className="btn btn--xlarge"
+            onClick={handleRegistrarDevolucao}
+          >
+            Registrar Devolução
+          </button>
+        </div>
+      </section>
 
       {/* Abas */}
       <div className="emp-tabs" role="tablist" aria-label="Abas de Empréstimos">
@@ -584,7 +681,7 @@ const Emprestimos: React.FC = () => {
         fields={emprestimoDetailFields}
         title="Detalhes do Empréstimo"
         onEdit={handleEditarHistorico}
-        onDelete={handleExcluirHistorico}
+        onDelete={askExcluirHistorico}
       />
 
       <EditModal<Emprestimo>
@@ -603,6 +700,14 @@ const Emprestimos: React.FC = () => {
         fields={emprestimoCreateFieldsWithOptions}
         title="Registrar Novo Empréstimo"
         infoMessage={eventoAtualInfo}
+        inlineFieldActions={{
+          participante: {
+            label: '+',
+            title: 'Criar novo participante',
+            onClick: () => setShowCreateParticipante(true)
+          }
+        }}
+        prefill={newParticipanteNamePrefill ? { participante: newParticipanteNamePrefill } as any : undefined}
       />
       <CreateModal
         isOpen={isReturnModalOpen}
@@ -610,6 +715,55 @@ const Emprestimos: React.FC = () => {
         onSave={handleSalvarDevolucao}
         fields={emprestimoReturnFields}
         title="Registrar Devolução"
+      />
+      <CreateModal
+        isOpen={showCreateParticipante}
+        onClose={() => setShowCreateParticipante(false)}
+        onSave={handleSalvarNovoParticipante as any}
+        fields={participanteCreateFieldsWithOptions as any}
+        title="Criar Participante"
+      />
+      <ConfirmModal
+        isOpen={confirmReturnOpen}
+        title="Devolver Empréstimo"
+        message={
+          emprestimoParaDevolver ? (
+            <>
+              Tem certeza que deseja marcar a devolução?<br />
+              <strong>Jogo:</strong> {emprestimoParaDevolver.jogo}<br />
+              <strong>Participante:</strong> {emprestimoParaDevolver.participante}<br />
+              <strong>Horário:</strong> {emprestimoParaDevolver.horario}
+            </>
+          ) : 'Tem certeza que deseja marcar a devolução?'
+        }
+        confirmLabel="Devolver"
+        cancelLabel="Cancelar"
+        variant="primary"
+        onConfirm={confirmDevolver}
+        onCancel={() => { setConfirmReturnOpen(false); setEmprestimoParaDevolver(null); }}
+      />
+      <ConfirmModal
+        isOpen={confirmOpen}
+        title={deleteContext === 'historico' ? 'Excluir Empréstimo do Histórico' : 'Excluir Empréstimo'}
+        message={
+          emprestimoParaExcluir ? (
+            <>
+              Tem certeza que deseja excluir o empréstimo?<br />
+              <strong>Jogo:</strong> {emprestimoParaExcluir.jogo}<br />
+              <strong>Participante:</strong> {emprestimoParaExcluir.participante}<br />
+              {deleteContext === 'ativo' && (
+                <>
+                  <strong>Horário:</strong> {emprestimoParaExcluir.horario}
+                </>
+              )}
+            </>
+          ) : 'Tem certeza que deseja excluir o empréstimo?'
+        }
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        variant="danger"
+        onConfirm={confirmExcluir}
+        onCancel={() => { setConfirmOpen(false); setEmprestimoParaExcluir(null); }}
       />
     </div>
   );
