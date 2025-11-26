@@ -45,6 +45,10 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onEmprestimoCreated }) => {
     const [showCreateInstituicaoInline, setShowCreateInstituicaoInline] = React.useState(false);
     const [newInstituicaoNamePrefill, setNewInstituicaoNamePrefill] = React.useState<string>("");
 
+    // Estados para modal de criar instituição inline (a partir do modal principal de participante)
+    const [showCreateInstituicaoFromParticipante, setShowCreateInstituicaoFromParticipante] = React.useState(false);
+    const [newInstituicaoNameFromParticipante, setNewInstituicaoNameFromParticipante] = React.useState<string>("");
+
     // Handlers das ações rápidas
     const handleAdicionarParticipante = () => {
         openParticipanteModal();
@@ -58,14 +62,76 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onEmprestimoCreated }) => {
         openEmprestimoModal();
     };
 
-    // Handlers para salvar dados
-    const handleSalvarParticipante = (novoParticipante: Omit<Participante, "id">) => {
+    // Handler para salvar participante (modal principal de adicionar participante)
+    const handleSalvarParticipante = async (novo: any) => {
         try {
-            const participanteCriado = createParticipante(novoParticipante);
-            console.log("Participante criado via QuickActions:", participanteCriado);
+            // Resolve instituição se fornecida
+            let instituicaoObj: Instituicao | undefined = undefined;
+            if (novo.instituicao) {
+                instituicaoObj = instituicoes.find((i: Instituicao) => i.nome === novo.instituicao);
+            }
+            // Validação condicional RA
+            if (instituicaoObj && !novo.ra) {
+                showError('RA é obrigatório quando instituição é informada.');
+                return;
+            }
+            // Validação de unicidade
+            const errors: Record<string, string> = {};
+            if (novo.email && participantes.some(p => p.email === novo.email)) {
+                errors.email = 'Email já cadastrado.';
+            }
+            if (novo.documento && participantes.some(p => p.documento === novo.documento)) {
+                errors.documento = 'Documento já cadastrado.';
+            }
+            if (novo.ra && participantes.some(p => p.ra === novo.ra)) {
+                errors.ra = 'RA já cadastrado.';
+            }
+            if (Object.keys(errors).length) {
+                showErrorList(errors);
+                return;
+            }
+
+            const payload: any = {
+                nome: novo.nome,
+                email: novo.email,
+                documento: novo.documento,
+                ra: novo.ra || '',
+                idInstituicao: instituicaoObj ? instituicaoObj.uid : undefined
+            };
+
+            const participanteCriado = await createParticipante(payload);
+            showSuccess('Participante criado com sucesso!');
             closeParticipanteModal();
-        } catch (error) {
-            handleError(error, "QuickActions - Criar Participante");
+        } catch (e: any) {
+            handleError(e, 'QuickActions - Criar Participante');
+            if (e?.status === 409) {
+                if (e?.errors) showErrorList(e.errors, 'warning');
+                else showWarning(e?.message || 'Conflito ao criar participante.');
+            } else if (e?.errors) {
+                showErrorList(e.errors);
+            } else {
+                showError(e?.message || 'Erro ao criar participante.');
+            }
+        }
+    };
+
+    // Handler para salvar instituição inline (a partir do modal principal de participante)
+    const handleSalvarInstituicaoFromParticipante = async (nova: any) => {
+        if (!createInstituicao) return;
+        try {
+            const saved = await createInstituicao({ nome: nova.nome, endereco: nova.endereco || '' });
+            setShowCreateInstituicaoFromParticipante(false);
+            setNewInstituicaoNameFromParticipante(saved.nome);
+            showSuccess('Instituição criada com sucesso!');
+        } catch (e: any) {
+            if (e?.status === 409) {
+                if (e?.errors) showErrorList(e.errors, 'warning');
+                else showWarning(e?.message || 'Conflito ao criar instituição.');
+            } else if (e?.errors) {
+                showErrorList(e.errors);
+            } else {
+                showError(e?.message || 'Erro ao criar instituição.');
+            }
         }
     };
 
@@ -287,8 +353,28 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onEmprestimoCreated }) => {
                 isOpen={isParticipanteModalOpen}
                 onClose={closeParticipanteModal}
                 onSave={handleSalvarParticipante}
-                fields={participanteCreateFields}
+                fields={participanteCreateFields.map(f => f.key === 'instituicao' ? {
+                    ...f,
+                    options: instituicoes.map((i: Instituicao) => ({ value: i.nome, label: i.nome }))
+                } : f)}
+                inlineFieldActions={{
+                    instituicao: {
+                        label: '+',
+                        title: 'Criar nova instituição',
+                        onClick: () => setShowCreateInstituicaoFromParticipante(true)
+                    }
+                }}
+                prefill={newInstituicaoNameFromParticipante ? { instituicao: newInstituicaoNameFromParticipante } as any : undefined}
                 title="Adicionar Novo Participante"
+            />
+
+            {/* Modal para criar instituição inline (a partir do modal principal de participante) */}
+            <CreateModal
+                isOpen={showCreateInstituicaoFromParticipante}
+                onClose={() => setShowCreateInstituicaoFromParticipante(false)}
+                onSave={handleSalvarInstituicaoFromParticipante as any}
+                fields={instituicaoCreateFields as any}
+                title="Criar Instituição"
             />
 
             {/* Modal para consultar jogos */}
