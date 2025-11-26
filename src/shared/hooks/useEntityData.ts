@@ -129,7 +129,7 @@ export function useJogos() {
       try {
         sessionStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
       } catch {
-        // ignore
+        console.error('Falha ao salvar cache de jogos no sessionStorage');
       }
     };
 
@@ -248,7 +248,6 @@ export function useJogos() {
     });
   }
 
-  // Força recarga de jogos do backend (ignora cache)
   async function refetchJogos(): Promise<void> {
     try {
       const fetched = await fetchJogos();
@@ -408,7 +407,7 @@ export function useEmprestimos() {
       try {
         sessionStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
       } catch {
-        // ignore
+        console.error('Falha ao salvar cache de empréstimos no sessionStorage');
       }
     };
 
@@ -461,7 +460,6 @@ export function useEmprestimos() {
     };
   }, []);
 
-  // Força recarga de empréstimos do backend (ignora cache)
   async function refetchEmprestimos(): Promise<void> {
     try {
       const { fetchEmprestimos } = await import('../services/emprestimosService');

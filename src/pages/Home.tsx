@@ -41,7 +41,7 @@ const Home: React.FC = () => {
                             if (p.id) participantesMap.set(String(p.id), p.nome);
                         });
                     } catch (err) {
-                        // Se falhar, ignora e segue com os locais
+                        console.error('Falha ao buscar participantes faltantes', err);
                     }
                 }
 

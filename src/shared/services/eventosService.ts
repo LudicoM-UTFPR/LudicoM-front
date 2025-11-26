@@ -25,7 +25,7 @@ async function extractError(res: Response): Promise<Error> {
       const text = await res.text();
       if (text) base = text.length < 500 ? text : base;
     }
-  } catch { /* ignore */ }
+  } catch { console.error('Falha ao extrair mensagem de erro detalhada do response'); }
   const generic: any = new Error(base);
   generic.status = res.status;
   return generic;

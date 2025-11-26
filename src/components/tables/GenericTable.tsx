@@ -89,20 +89,22 @@ const GenericTable = <T extends { id: number | string }>({
 
   return (
     <section className="tabela-emprestimo">
-      {/* Campo de Busca */}
-      <div className="busca-container">
-        <input
-          type="text"
-          className="busca-input"
-          placeholder={searchPlaceholder}
-          value={filtro}
-          onChange={handleFiltroChange}
-          onKeyPress={handleKeyPress}
-        />
-        <button className="busca-btn" onClick={handleBuscaClick}>
-          <SearchIcon />
-        </button>
-      </div>
+      {/* Campo de Busca - oculta quando não há dados */}
+      {data.length > 0 && (
+        <div className="busca-container">
+          <input
+            type="text"
+            className="busca-input"
+            placeholder={searchPlaceholder}
+            value={filtro}
+            onChange={handleFiltroChange}
+            onKeyPress={handleKeyPress}
+          />
+          <button className="busca-btn" onClick={handleBuscaClick}>
+            <SearchIcon />
+          </button>
+        </div>
+      )}
 
       {/* Tabela */}
       {dadosFiltrados.length === 0 ? (

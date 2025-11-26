@@ -36,7 +36,7 @@ async function extractError(res: Response): Promise<Error> {
             }
         }
     } catch {
-        // Ignora falhas de parsing e usa base genérica
+        console.error('Falha ao extrair mensagem de erro detalhada do response');
     }
     const generic: any = new Error(base);
     generic.status = res.status;

@@ -523,12 +523,12 @@ const Emprestimos: React.FC = () => {
       label: 'Jogo',
       type: 'autocomplete' as const,
       required: true,
-      placeholder: 'Selecione o jogo emprestado...'
+      placeholder: 'Busque pelo nome ou código de barras do jogo...'
     };
     const jogosEmprestados = emprestimosAtivos.map(e => e.jogo);
     const options = jogos.filter(j => jogosEmprestados.includes(j.nome)).map(j => ({
       value: j.nome,
-      label: j.nome
+      label: `${j.nome}${j.codigoDeBarras ? ` (${j.codigoDeBarras})` : ''}`
     }));
     return [ { ...fieldBase, options } ];
   }, [emprestimosAtivos, jogos, isReturnModalOpen]);
