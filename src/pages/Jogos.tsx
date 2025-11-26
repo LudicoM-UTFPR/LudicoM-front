@@ -167,6 +167,7 @@ const Jogos: React.FC = () => {
         searchPlaceholder="Buscar por jogo..."
         searchFields={['nome', 'nomeAlternativo', 'codigoDeBarras']}
         tableTitle="Jogos Cadastrados"
+        emptyMessage="Nenhum jogo encontrado."
       />
       
       <DetailModal<Jogo>

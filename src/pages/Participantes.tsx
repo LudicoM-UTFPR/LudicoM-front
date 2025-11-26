@@ -234,6 +234,7 @@ const Participantes: React.FC = () => {
         searchPlaceholder="Buscar por participante..."
         searchFields={['nome', 'email', 'documento', 'ra']}
         tableTitle="Participantes Cadastrados"
+        emptyMessage="Nenhum participante encontrado."
       />
       
       <DetailModal<Participante>

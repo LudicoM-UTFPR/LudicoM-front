@@ -642,35 +642,27 @@ const Emprestimos: React.FC = () => {
 
       <div className="emp-tab-panel">
         {activeTab === 'ativos' && (
-          <>
-            <GenericTable<Emprestimo>
-              data={emprestimosAtivos}
-              columns={EMPRESTIMO_COLUMNS}
-              actions={actionsAtivos}
-              searchPlaceholder="Buscar empréstimo ativo..."
-              searchFields={['jogo', 'participante']}
-              tableTitle="Empréstimos Ativos"
-            />
-            {emprestimosAtivos.length === 0 && (
-              <p className="empty-message" role="status">Nenhum empréstimo encontrado.</p>
-            )}
-          </>
+          <GenericTable<Emprestimo>
+            data={emprestimosAtivos}
+            columns={EMPRESTIMO_COLUMNS}
+            actions={actionsAtivos}
+            searchPlaceholder="Buscar empréstimo ativo..."
+            searchFields={['jogo', 'participante']}
+            tableTitle="Empréstimos Ativos"
+            emptyMessage="Nenhum empréstimo ativo encontrado."
+          />
         )}
 
         {activeTab === 'historico' && (
-          <>
-            <GenericTable<Emprestimo>
-              data={historicoEmprestimos}
-              columns={EMPRESTIMO_DETAIL_COLUMNS}
-              actions={actionsHistorico}
-              searchPlaceholder="Buscar no histórico..."
-              searchFields={['jogo', 'participante']}
-              tableTitle="Histórico de Empréstimos"
-            />
-            {historicoEmprestimos.length === 0 && (
-              <p className="empty-message" role="status">Nenhum empréstimo encontrado.</p>
-            )}
-          </>
+          <GenericTable<Emprestimo>
+            data={historicoEmprestimos}
+            columns={EMPRESTIMO_DETAIL_COLUMNS}
+            actions={actionsHistorico}
+            searchPlaceholder="Buscar no histórico..."
+            searchFields={['jogo', 'participante']}
+            tableTitle="Histórico de Empréstimos"
+            emptyMessage="Nenhum empréstimo no histórico."
+          />
         )}
       </div>
       

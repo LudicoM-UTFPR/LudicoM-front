@@ -250,6 +250,7 @@ const Eventos: React.FC = () => {
         searchPlaceholder="Buscar por evento..."
         searchFields={['data', 'instituicao']}
         tableTitle="Eventos Cadastrados"
+        emptyMessage="Nenhum evento encontrado."
       />
       {loading && <p>Carregando eventos...</p>}
       {error && <p className="error">{error}</p>}

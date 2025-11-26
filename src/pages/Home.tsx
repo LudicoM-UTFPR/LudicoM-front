@@ -210,6 +210,7 @@ const Home: React.FC = () => {
                 searchPlaceholder="Buscar por jogo ou participante..."
                 searchFields={["jogo", "participante"]}
                 tableTitle="Empréstimos Ativos"
+                emptyMessage="Nenhum empréstimo ativo encontrado."
             />
             <CreateModal
                 isOpen={isCreateModalOpen}
