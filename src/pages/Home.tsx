@@ -4,33 +4,68 @@ import { useEmprestimos, useJogos, useParticipantes, useEventos } from "../share
 import { handleError } from "../shared/utils";
 import { MESSAGES, EMPRESTIMO_COLUMNS, emprestimoCreateFields } from "../shared/constants";
 import type { Emprestimo, TableAction } from "../shared/types";
+import { createEmprestimo } from "../shared/services/emprestimosService";
+import { useToast } from "../components/common";
 
 const Home: React.FC = () => {
     const { emprestimos, refetchEmprestimos } = useEmprestimos();
     const { jogos, refetchJogos } = useJogos();
     const { participantes } = useParticipantes();
     const { eventos, refetchEventos } = useEventos();
+    const { showError, showErrorList, showSuccess } = useToast();
     const [emprestimosAtivos, setEmprestimosAtivos] = useState<Emprestimo[]>([]);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     useEffect(() => {
-        try {
-            const emprestimosMapeados = emprestimos.map((emp) => {
-                const jogoNome = emp.jogo || jogos.find((j) => String(j.id) === String(emp.idJogo))?.nome || "Jogo não encontrado";
-                const participanteNome = emp.participante || participantes.find((p) => String(p.id) === String(emp.idParticipante))?.nome || "Participante não encontrado";
-                return {
-                    ...emp,
-                    jogo: jogoNome,
-                    participante: participanteNome,
-                    horario: emp.horaEmprestimo,
-                };
-            });
+        let isMounted = true;
+        async function mapEmprestimos() {
+            try {
+                // Participantes locais
+                let participantesMap = new Map<string, string>();
+                participantes.forEach(p => {
+                    if (p.id) participantesMap.set(String(p.id), p.nome);
+                });
 
-            const ativos = emprestimosMapeados.filter((e) => !e.isDevolvido);
-            setEmprestimosAtivos(ativos);
-        } catch (error) {
-            handleError(error, "Home - Data Loading");
+                // Verifica se há algum participante que não está na lista local
+                const missingIds = emprestimos
+                    .map(emp => String(emp.idParticipante))
+                    .filter(id => id && !participantesMap.has(id));
+
+                let fetchedParticipantes: any[] = [];
+                if (missingIds.length > 0) {
+                    // Busca participantes faltantes via service
+                    try {
+                        const { fetchParticipantes } = await import("../shared/services/participanteService");
+                        fetchedParticipantes = await fetchParticipantes();
+                        fetchedParticipantes.forEach(p => {
+                            if (p.id) participantesMap.set(String(p.id), p.nome);
+                        });
+                    } catch (err) {
+                        // Se falhar, ignora e segue com os locais
+                    }
+                }
+
+                const emprestimosMapeados = emprestimos.map((emp) => {
+                    let participanteNome = emp.participante;
+                    if (!participanteNome || participanteNome === "Participante não encontrado") {
+                        participanteNome = participantesMap.get(String(emp.idParticipante)) || "Participante não encontrado";
+                    }
+                    const jogoNome = emp.jogo || jogos.find((j) => String(j.id) === String(emp.idJogo))?.nome || "Jogo não encontrado";
+                    return {
+                        ...emp,
+                        jogo: jogoNome,
+                        participante: participanteNome,
+                        horario: emp.horaEmprestimo,
+                    };
+                });
+                const ativos = emprestimosMapeados.filter((e) => !e.isDevolvido);
+                if (isMounted) setEmprestimosAtivos(ativos);
+            } catch (error) {
+                handleError(error, "Home - Data Loading");
+            }
         }
+        mapEmprestimos();
+        return () => { isMounted = false; };
     }, [emprestimos, jogos, participantes]);
 
     const handleRegistrarEmprestimo = useCallback(() => {
@@ -44,12 +79,12 @@ const Home: React.FC = () => {
             const participanteSelecionado = participantes.find((p) => p.nome === novoEmprestimo.participante);
 
             if (!jogoSelecionado) {
-                alert("Jogo não encontrado. Selecione um jogo válido.");
+                showError('Jogo não encontrado. Selecione um jogo válido.');
                 return;
             }
 
             if (!participanteSelecionado) {
-                alert("Participante não encontrado. Selecione um participante válido.");
+                showError('Participante não encontrado. Selecione um participante válido.');
                 return;
             }
 
@@ -68,7 +103,7 @@ const Home: React.FC = () => {
             });
 
             if (!eventoAtual) {
-                alert("Nenhum evento ativo no momento. Verifique se existe um evento cadastrado para hoje com horário atual.");
+                showError('Nenhum evento ativo no momento. Verifique se existe um evento cadastrado para hoje com horário atual.');
                 return;
             }
 
@@ -82,14 +117,20 @@ const Home: React.FC = () => {
                 observacoes: novoEmprestimo.observacoes || "",
             };
 
-            console.log("Payload de criação de empréstimo:", payload);
+            await createEmprestimo(payload);
 
             if (refetchJogos) refetchJogos();
             if (refetchEmprestimos) refetchEmprestimos();
 
+            showSuccess('Empréstimo registrado com sucesso!');
             setIsCreateModalOpen(false);
-        } catch (error) {
-            console.error("Erro ao registrar empréstimo:", error);
+        } catch (e: any) {
+            handleError(e, 'Home - Criar Empréstimo');
+            if (e?.errors) {
+                showErrorList(e.errors);
+            } else {
+                showError(e?.message || 'Erro ao criar empréstimo');
+            }
         }
     };
 
@@ -117,8 +158,38 @@ const Home: React.FC = () => {
             );
         }
 
-        return null;
-    }, [eventos]);
+        const instituicaoNome = typeof eventoAtual.instituicao === "string"
+            ? eventoAtual.instituicao
+            : eventoAtual.instituicao?.nome || "Não informada";
+
+        const dataFormatada = new Date(eventoAtual.data + "T00:00:00").toLocaleDateString("pt-BR");
+
+        const [horaFim, minutoFim] = String(eventoAtual.horaFim).substring(0, 5).split(":").map(Number);
+        const [horaAtual, minutoAtual] = currentTime.split(":").map(Number);
+        const minutosAteFim = (horaFim * 60 + minutoFim) - (horaAtual * 60 + minutoAtual);
+        const mostrarAviso = minutosAteFim <= 30 && minutosAteFim > 0;
+
+        return (
+            <div>
+                <strong>📍 Evento Atual:</strong><br />
+                <strong>Local:</strong> {instituicaoNome}<br />
+                <strong>Data:</strong> {dataFormatada}<br />
+                <strong>Horário:</strong> {eventoAtual.horaInicio} - {eventoAtual.horaFim}
+                {mostrarAviso && (
+                    <div style={{
+                        marginTop: "0.75rem",
+                        padding: "0.75rem",
+                        backgroundColor: "#fff9c4",
+                        border: "1px solid #fbc02d",
+                        borderRadius: "4px",
+                        color: "#7f6003"
+                    }}>
+                        <strong>⚠️ Atenção:</strong> Faltam {minutosAteFim} minutos para o término do evento. Após o término, não será possível registrar novos empréstimos.
+                    </div>
+                )}
+            </div>
+        );
+    }, [eventos, isCreateModalOpen]);
 
     const actions: TableAction<Emprestimo>[] = [
         { label: "Devolver", onClick: () => {}, variant: "primary" },
@@ -128,7 +199,10 @@ const Home: React.FC = () => {
     return (
         <>
             <WelcomeSection />
-            <QuickActions />
+            <QuickActions onEmprestimoCreated={() => {
+                if (refetchEmprestimos) refetchEmprestimos();
+                if (refetchJogos) refetchJogos();
+            }} />
             <GenericTable<Emprestimo>
                 data={emprestimosAtivos}
                 columns={EMPRESTIMO_COLUMNS}
