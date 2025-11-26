@@ -184,6 +184,15 @@
 
 /* Mobile Large */
 @media (max-width: 600px) {
+    /* Reduz apenas o espaço entre os dois primeiros elementos da page-container */
+    /* Mantém o gap original, e compensa no segundo filho */
+    .page-container > :nth-child(2) {
+        /* gap original é 48px; queremos ~16px entre 1º e 2º -> compensa -32px */
+        margin-top: -40px;
+    }
+    .main-content {
+        padding-block-start: 0 !important;
+    }
     .nav {
         gap: 8px;
     }

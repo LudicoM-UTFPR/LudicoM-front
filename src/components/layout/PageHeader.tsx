@@ -10,7 +10,7 @@ const PageHeader: React.FC<PageHeaderProps> = React.memo(({
     return (
         <section className="page-header">
             <div className="page-header-content">
-                <h1 className="page-title">{title}</h1>
+                <h1 className="page-title gradient-title">{title}</h1>
                 {showButton && buttonText && (
                     <button 
                         className="btn btn--xlarge btn--primary"

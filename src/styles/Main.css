@@ -28,3 +28,11 @@
 /* ============================================
    FIM DOS IMPORTS - ESTILOS MODULARES
    ============================================ */
+/* Gradiente para títulos principais */
+.gradient-title {
+   background: linear-gradient(90deg, #ff0000, #ff9900);
+   -webkit-background-clip: text;
+   -webkit-text-fill-color: transparent;
+   background-clip: text;
+   color: transparent;
+}
