@@ -1,4 +1,4 @@
-import type { Emprestimo } from "../types";
+import type { Emprestimo, PageResponse } from "../types";
 import { API_BASE_URL } from "../constants";
 import { validateEntityData, ENTITY_SCHEMAS, handleError, ensureHHMMSS } from "../utils";
 import { getAuthHeaders } from "./authService";
@@ -6,6 +6,60 @@ import { getAuthHeaders } from "./authService";
 // Base helper para construir URL sem barras duplicadas
 const base = API_BASE_URL?.replace(/\/+$/, "") || "";
 const ENDPOINT = `${base}/emprestimo`;
+
+function normalizeEmprestimo(item: any): any {
+  const jogoObj = item.jogo;
+  const participanteObj = item.participante;
+  const eventoObj = item.evento;
+  const horaEmp = item.horaEmprestimo ? String(item.horaEmprestimo).substring(0, 5) : '';
+  const horaDev = item.horaDevolucao ? String(item.horaDevolucao).substring(0, 5) : null;
+  return {
+    ...item,
+    id: String(item.uid || item.id),
+    uid: item.uid,
+    idJogo: item.idJogo || (jogoObj?.uid ? String(jogoObj.uid) : undefined),
+    idParticipante: item.idParticipante || (participanteObj?.uid ? String(participanteObj.uid) : undefined),
+    idEvento: item.idEvento || (eventoObj?.uid ? String(eventoObj.uid) : undefined),
+    jogo: jogoObj?.nome || item.jogo || '',
+    participante: participanteObj?.nome || item.participante || '',
+    horario: horaEmp,
+    horaEmprestimo: horaEmp,
+    horaDevolucao: horaDev,
+  };
+}
+
+export async function fetchEmprestimosPaginated(
+  page: number,
+  size: number,
+  isDevolvido?: boolean,
+  search?: string,
+  signal?: AbortSignal
+): Promise<PageResponse<Emprestimo>> {
+  let url = `${ENDPOINT}?paginated=true&page=${page}&size=${size}`;
+  if (isDevolvido !== undefined) url += `&isDevolvido=${isDevolvido}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  try {
+    const res = await fetch(url, { signal, headers: getAuthHeaders() });
+    if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+    const json = await res.json();
+    const content = Array.isArray(json.content) ? json.content : [];
+    const normalized = content.map(normalizeEmprestimo);
+    const validated = validateEntityData<Emprestimo>(normalized, ENTITY_SCHEMAS.emprestimo as any);
+    return {
+      content: validated,
+      totalPages: json.totalPages ?? 0,
+      totalElements: json.totalElements ?? 0,
+      number: json.number ?? page,
+      size: json.size ?? size,
+      first: json.first ?? true,
+      last: json.last ?? true,
+      empty: json.empty ?? validated.length === 0
+    };
+  } catch (e) {
+    handleError(e, 'emprestimosService.fetchEmprestimosPaginated');
+    return { content: [], totalPages: 0, totalElements: 0, number: 0, size: size, first: true, last: true, empty: true };
+  }
+}
 
 export async function fetchEmprestimos(signal?: AbortSignal): Promise<Emprestimo[]> {
   try {

@@ -1,4 +1,4 @@
-import type { Participante, Instituicao } from '../types';
+import type { Participante, Instituicao, PageResponse } from '../types';
 import { API_BASE_URL } from '../constants';
 import { validateEntityData, ENTITY_SCHEMAS, handleError } from '../utils';
 import { getAuthHeaders } from './authService';
@@ -63,6 +63,37 @@ export async function fetchParticipantes(signal?: AbortSignal): Promise<Particip
     return validated;
   } catch (e) {
     handleError(e, 'participanteService.fetchParticipantes');
+    throw e;
+  }
+}
+
+export async function fetchParticipantesPaginated(
+  page: number,
+  size: number,
+  search?: string,
+  signal?: AbortSignal
+): Promise<PageResponse<Participante>> {
+  let url = `${ENDPOINT}?paginated=true&page=${page}&size=${size}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  try {
+    const res = await fetch(url, { signal, headers: getAuthHeaders() });
+    if (!res.ok) throw await extractError(res);
+    const json = await res.json();
+    const content = Array.isArray(json.content) ? json.content : [];
+    const normalized = content.map(normalize);
+    const validated = validateEntityData<Participante>(normalized, ENTITY_SCHEMAS.participante as any);
+    return {
+      content: validated,
+      totalPages: json.totalPages ?? 0,
+      totalElements: json.totalElements ?? 0,
+      number: json.number ?? page,
+      size: json.size ?? size,
+      first: json.first ?? true,
+      last: json.last ?? true,
+      empty: json.empty ?? validated.length === 0
+    };
+  } catch (e) {
+    handleError(e, 'participanteService.fetchParticipantesPaginated');
     throw e;
   }
 }

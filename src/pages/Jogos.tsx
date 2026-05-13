@@ -1,20 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal } from '../components';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { PageHeader, GenericTable, DetailModal, EditModal, CreateModal, Pagination } from '../components';
 import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { useToast } from '../components/common';
 import { jogoDetailFields, jogoEditFields, jogoCreateFields, JOGO_COLUMNS } from '../shared/constants';
-import { useCrudOperations, useJogos } from '../shared/hooks';
+import { useCrudOperations } from '../shared/hooks';
+import { fetchJogosPaginated, createJogo, updateJogo, deleteJogo } from '../shared/services/jogosService';
 import type { Jogo, TableAction } from '../shared/types';
 
 const Jogos: React.FC = () => {
-  // Hook para gerenciamento de dados
-  const { jogos, loading, error, createJogo, updateJogo, deleteJogo } = useJogos();
-  const [localJogos, setLocalJogos] = useState<Jogo[]>([]);
   const { showSuccess, showError, showWarning, showErrorList } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState<Jogo | null>(null);
-  
-  // Hook personalizado para operações CRUD
+
+  const [jogos, setJogos] = useState<Jogo[]>([]);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const {
     selectedItem: selectedJogo,
     isModalOpen,
@@ -23,44 +31,68 @@ const Jogos: React.FC = () => {
     handleDetalhes,
     handleEditar,
     handleCriar: handleCriarJogo,
-    createHandleExcluir,
-    createHandleSalvarEdicao,
-    createHandleSalvarCriacao,
     closeDetailModal,
     closeEditModal,
     closeCreateModal
   } = useCrudOperations<Jogo>();
 
-  // Sincroniza dados do hook com estado local para operações CRUD
-  useEffect(() => {
-    if (jogos.length > 0) {
-      setLocalJogos(jogos);
+  const fetchPage = useCallback(async (p: number, search: string, size: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetchJogosPaginated(p, size, search || undefined);
+      setJogos(result.content);
+      setTotalPages(result.totalPages);
+      setTotalElements(result.totalElements);
+      setPage(result.number);
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
+      setError('Erro ao carregar jogos.');
+    } finally {
+      setLoading(false);
     }
-  }, [jogos]);
+  }, []);
 
-  // Handlers criados usando as factories do hook
-  const handleExcluirLocal = createHandleExcluir(
-    localJogos,
-    setLocalJogos,
-    (jogo) => `Tem certeza que deseja excluir o jogo?\n\nNome: ${jogo.nome}\nCódigo: ${jogo.codigoDeBarras}`
-  );
+  useEffect(() => {
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+    searchTimerRef.current = setTimeout(() => {
+      setDebouncedSearch(searchText);
+      if (searchText !== debouncedSearch) {
+        setPage(0);
+      }
+    }, 300);
+    return () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    };
+  }, [searchText]);
+
+  useEffect(() => {
+    fetchPage(page, debouncedSearch, pageSize);
+  }, [page, debouncedSearch, pageSize, fetchPage]);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchText(value);
+  }, []);
+
+  const handlePageSizeChange = useCallback((size: number) => {
+    setPageSize(size);
+    setPage(0);
+  }, []);
+
+  const refetchCurrentPage = useCallback(() => {
+    fetchPage(page, debouncedSearch, pageSize);
+  }, [page, debouncedSearch, pageSize, fetchPage]);
 
   const handleSalvarEdicao = async (jogoAtualizado: Jogo) => {
-    // Validação de unicidade local: codigoDeBarras (se informado)
-    if (jogoAtualizado.codigoDeBarras) {
-      const conflito = localJogos.some(j => j.codigoDeBarras === jogoAtualizado.codigoDeBarras && String(j.id) !== String(jogoAtualizado.id));
-      if (conflito) {
-        showError('Código de barras já cadastrado.');
-        return;
-      }
-    }
     try {
-      if (updateJogo) {
-        const saved = await updateJogo(String(jogoAtualizado.id), jogoAtualizado);
-        setLocalJogos(prev => prev.map(j => String(j.id) === String(saved.id) ? saved : j));
-        showSuccess('Jogo atualizado com sucesso!');
-        closeEditModal(); // Fecha apenas em caso de sucesso
-      }
+      const saved = await updateJogo(String(jogoAtualizado.id), jogoAtualizado);
+      showSuccess('Jogo atualizado com sucesso!');
+      closeEditModal();
+      refetchCurrentPage();
     } catch (err: any) {
       if (err?.status === 409) {
         if (err?.errors) showErrorList(err.errors, 'warning'); else showWarning(err?.message || 'Conflito ao atualizar jogo.');
@@ -72,7 +104,6 @@ const Jogos: React.FC = () => {
     }
   };
 
-  // Exclusão que tenta o backend e faz fallback para o handler local
   const askExcluir = (jogo: Jogo) => {
     setToDelete(jogo);
     setConfirmOpen(true);
@@ -81,15 +112,9 @@ const Jogos: React.FC = () => {
   const confirmExcluir = async () => {
     if (!toDelete) return;
     try {
-      if (deleteJogo) {
-        await deleteJogo(String(toDelete.id));
-        setLocalJogos(prev => prev.filter(j => String(j.id) !== String(toDelete.id)));
-        showSuccess('Jogo excluído com sucesso!');
-      } else {
-        // modo sem backend: usa handler local
-        handleExcluirLocal(toDelete);
-        showSuccess('Jogo excluído localmente.');
-      }
+      await deleteJogo(String(toDelete.id));
+      showSuccess('Jogo excluído com sucesso!');
+      refetchCurrentPage();
     } catch (err: any) {
       if (err?.status === 409) {
         if (err?.errors) showErrorList(err.errors, 'warning'); else showWarning(err?.message || 'Conflito: não é possível excluir jogo.');
@@ -104,29 +129,14 @@ const Jogos: React.FC = () => {
     }
   };
 
-  // Substitui a criação local por uma que persiste no backend quando possível
   const handleSalvarCriacao = async (novo: any) => {
-    // Validação de unicidade local: codigoDeBarras (se informado)
-    if (novo?.codigoDeBarras) {
-      const conflito = localJogos.some(j => j.codigoDeBarras === novo.codigoDeBarras);
-      if (conflito) {
-        showError('Código de barras já cadastrado.');
-        return;
-      }
-    }
     try {
-      if (createJogo) {
-        const saved = await createJogo(novo);
-        setLocalJogos(prev => [...prev, saved]);
-        showSuccess('Jogo criado com sucesso!');
-        closeCreateModal(); // Fecha apenas em caso de sucesso
-      } else {
-        // fallback local (modo offline)
-        const temp = createHandleSalvarCriacao(localJogos, setLocalJogos);
-        temp(novo);
-        showSuccess('Jogo criado localmente (modo offline).');
-        closeCreateModal(); // Fecha também para fallback local
-      }
+      await createJogo(novo);
+      showSuccess('Jogo criado com sucesso!');
+      closeCreateModal();
+      setPage(0);
+      setDebouncedSearch('');
+      setSearchText('');
     } catch (err: any) {
       if (err?.status === 409) {
         if (err?.errors) showErrorList(err.errors, 'warning'); else showWarning(err?.message || 'Conflito ao criar jogo.');
@@ -137,6 +147,7 @@ const Jogos: React.FC = () => {
       }
     }
   };
+
   const actions: TableAction<Jogo>[] = [
     { label: 'Detalhes', onClick: handleDetalhes, variant: 'primary' },
     { label: 'Editar', onClick: handleEditar, variant: 'secondary' },
@@ -160,15 +171,43 @@ const Jogos: React.FC = () => {
           </button>
         </div>
       </section>
-      <GenericTable<Jogo>
-        data={localJogos}
-        columns={JOGO_COLUMNS}
-        actions={actions}
-        searchPlaceholder="Buscar por jogo..."
-        searchFields={['nome', 'nomeAlternativo', 'codigoDeBarras']}
-        tableTitle="Jogos Cadastrados"
-        emptyMessage="Nenhum jogo encontrado."
-      />
+
+      {loading && jogos.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+          Carregando...
+        </div>
+      )}
+
+      {error && jogos.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '20px', color: 'var(--btn-danger)' }}>
+          {error}
+        </div>
+      )}
+
+      {(jogos.length > 0 || !loading) && (
+        <div style={{ opacity: loading && jogos.length > 0 ? 0.5 : 1, transition: 'opacity 0.15s ease' }}>
+          <GenericTable<Jogo>
+            data={jogos}
+            columns={JOGO_COLUMNS}
+            actions={actions}
+            searchPlaceholder="Buscar por jogo..."
+            searchFields={['nome', 'nomeAlternativo', 'codigoDeBarras']}
+            tableTitle="Jogos Cadastrados"
+            emptyMessage="Nenhum jogo encontrado."
+            controlledSearchValue={searchText}
+            onControlledSearchChange={handleSearchChange}
+          />
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        </div>
+      )}
       
       <DetailModal<Jogo>
         isOpen={isModalOpen}
@@ -176,7 +215,6 @@ const Jogos: React.FC = () => {
         item={selectedJogo}
         fields={jogoDetailFields}
         title="Detalhes do Jogo"
-        // fecha modal (factory controla estado internamente)
         onDelete={askExcluir}
       />
 

@@ -12,6 +12,8 @@ interface GenericTableProps<T> {
   searchFields: (keyof T)[];
   tableTitle: string;
   emptyMessage?: string;
+  controlledSearchValue?: string;
+  onControlledSearchChange?: (value: string) => void;
 }
 
 const GenericTable = <T extends { id: number | string }>({
@@ -21,12 +23,18 @@ const GenericTable = <T extends { id: number | string }>({
   searchPlaceholder = "Buscar...",
   searchFields,
   tableTitle,
-  emptyMessage = "Nenhum dado encontrado."
+  emptyMessage = "Nenhum dado encontrado.",
+  controlledSearchValue,
+  onControlledSearchChange
 }: GenericTableProps<T>): React.ReactElement => {
+  const isControlled = onControlledSearchChange !== undefined;
+
   const [filtro, setFiltro] = useState<string>('');
+  const currentSearch = isControlled ? (controlledSearchValue ?? '') : filtro;
 
   // Memoiza os dados filtrados para evitar recálculos desnecessários
   const dadosFiltrados = useMemo((): T[] => {
+    if (isControlled) return data;
     try {
       if (!filtro.trim()) return data;
       return filterByMultipleFields(data, filtro, searchFields);
@@ -34,11 +42,15 @@ const GenericTable = <T extends { id: number | string }>({
       handleError(error, 'GenericTable - Filter');
       return data;
     }
-  }, [data, filtro, searchFields]);
+  }, [data, filtro, searchFields, isControlled]);
 
   const handleFiltroChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
-    setFiltro(e.target.value);
-  }, []);
+    if (isControlled) {
+      onControlledSearchChange(e.target.value);
+    } else {
+      setFiltro(e.target.value);
+    }
+  }, [isControlled, onControlledSearchChange]);
 
   const handleBuscaClick = useCallback((): void => {
     // Função já é executada automaticamente pelo useMemo
@@ -89,14 +101,14 @@ const GenericTable = <T extends { id: number | string }>({
 
   return (
     <section className="tabela-emprestimo">
-      {/* Campo de Busca - oculta quando não há dados */}
-      {data.length > 0 && (
+      {/* Campo de Busca - oculta quando não há dados (exceto em modo controlado) */}
+      {(isControlled || data.length > 0) && (
         <div className="busca-container">
           <input
             type="text"
             className="busca-input"
             placeholder={searchPlaceholder}
-            value={filtro}
+            value={currentSearch}
             onChange={handleFiltroChange}
             onKeyPress={handleKeyPress}
           />
@@ -109,7 +121,7 @@ const GenericTable = <T extends { id: number | string }>({
       {/* Tabela */}
       {dadosFiltrados.length === 0 ? (
         <EmptyState 
-          message={filtro.trim() ? "Nenhum resultado encontrado para sua busca." : emptyMessage}
+          message={currentSearch.trim() && !isControlled ? "Nenhum resultado encontrado para sua busca." : emptyMessage}
         />
       ) : (
         <div className="tabela-wrapper">
