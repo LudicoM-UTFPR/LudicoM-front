@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { WelcomeSection, QuickActions, GenericTable, CreateModal } from "../components";
+import { ConfirmModal } from "../components/modals/ConfirmModal";
 import { useEmprestimos, useJogos, useParticipantes, useEventos } from "../shared/hooks";
 import { handleError } from "../shared/utils";
 import { MESSAGES, EMPRESTIMO_COLUMNS, emprestimoCreateFields } from "../shared/constants";
 import type { Emprestimo, TableAction } from "../shared/types";
-import { createEmprestimo } from "../shared/services/emprestimosService";
+import { createEmprestimo, deleteEmprestimo, devolverEmprestimo } from "../shared/services/emprestimosService";
 import { useToast } from "../components/common";
 
 const Home: React.FC = () => {
@@ -15,6 +16,12 @@ const Home: React.FC = () => {
     const { showError, showErrorList, showSuccess } = useToast();
     const [emprestimosAtivos, setEmprestimosAtivos] = useState<Emprestimo[]>([]);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    // Estados para modal de confirmação de devolução
+    const [confirmReturnOpen, setConfirmReturnOpen] = useState(false);
+    const [emprestimoParaDevolver, setEmprestimoParaDevolver] = useState<Emprestimo | null>(null);
+    // Estados para modal de confirmação de exclusão
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const [emprestimoParaExcluir, setEmprestimoParaExcluir] = useState<Emprestimo | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -191,9 +198,76 @@ const Home: React.FC = () => {
         );
     }, [eventos, isCreateModalOpen]);
 
+    // Função para devolver empréstimo
+    const handleDevolver = useCallback(async (emprestimo: Emprestimo) => {
+        try {
+            const jogoObj = jogos.find(j => (emprestimo.idJogo && String(j.id) === String(emprestimo.idJogo)) || j.nome === emprestimo.jogo);
+            if (!jogoObj) {
+                showError('Jogo não encontrado na lista local.');
+                return;
+            }
+            if (!jogoObj.codigoDeBarras) {
+                showError('Jogo sem código de barras cadastrado. Não é possível devolver pela API.');
+                return;
+            }
+            await devolverEmprestimo(String(jogoObj.codigoDeBarras));
+            if (refetchJogos) refetchJogos();
+            if (refetchEmprestimos) refetchEmprestimos();
+            showSuccess('Empréstimo devolvido com sucesso!');
+        } catch (e: any) {
+            handleError(e, 'Home - devolver');
+            if (e?.errors) showErrorList(e.errors); 
+            else showError(e?.message || 'Erro ao devolver empréstimo');
+        }
+    }, [showError, showErrorList, showSuccess, jogos, refetchJogos, refetchEmprestimos]);
+
+    // Abre modal de confirmação de devolução
+    const askDevolver = useCallback((emprestimo: Emprestimo) => {
+        setEmprestimoParaDevolver(emprestimo);
+        setConfirmReturnOpen(true);
+    }, []);
+
+    const confirmDevolver = useCallback(async () => {
+        if (!emprestimoParaDevolver) return;
+        await handleDevolver(emprestimoParaDevolver);
+        setConfirmReturnOpen(false);
+        setEmprestimoParaDevolver(null);
+    }, [emprestimoParaDevolver, handleDevolver]);
+
+    // Função para excluir empréstimo
+    const handleExcluir = useCallback(async (emprestimo: Emprestimo) => {
+        try {
+            await deleteEmprestimo(String(emprestimo.id));
+            setEmprestimosAtivos(prevEmprestimos => prevEmprestimos.filter(e => String(e.id) !== String(emprestimo.id)));
+            if (refetchJogos) refetchJogos();
+            if (refetchEmprestimos) refetchEmprestimos();
+            showSuccess('Empréstimo excluído com sucesso!');
+        } catch (e: any) {
+            handleError(e, 'Home - delete');
+            if (e?.errors) {
+                showErrorList(e.errors);
+            } else {
+                showError(e?.message || 'Erro ao excluir empréstimo');
+            }
+        }
+    }, [showError, showErrorList, showSuccess, refetchJogos, refetchEmprestimos]);
+
+    // Abre modal de confirmação de exclusão
+    const askExcluir = useCallback((emprestimo: Emprestimo) => {
+        setEmprestimoParaExcluir(emprestimo);
+        setConfirmDeleteOpen(true);
+    }, []);
+
+    const confirmExcluir = useCallback(async () => {
+        if (!emprestimoParaExcluir) return;
+        await handleExcluir(emprestimoParaExcluir);
+        setConfirmDeleteOpen(false);
+        setEmprestimoParaExcluir(null);
+    }, [emprestimoParaExcluir, handleExcluir]);
+
     const actions: TableAction<Emprestimo>[] = [
-        { label: "Devolver", onClick: () => {}, variant: "primary" },
-        { label: "Excluir", onClick: () => {}, variant: "danger" },
+        { label: "Devolver", onClick: askDevolver, variant: "primary" },
+        { label: "Excluir", onClick: askExcluir, variant: "danger" },
     ];
 
     return (
@@ -242,6 +316,54 @@ const Home: React.FC = () => {
                 })}
                 title="Registrar Novo Empréstimo"
                 infoMessage={eventoAtualInfo}
+            />
+            
+            {/* Modal de confirmação de devolução */}
+            <ConfirmModal
+                isOpen={confirmReturnOpen}
+                title="Devolver Empréstimo"
+                message={
+                    emprestimoParaDevolver ? (
+                        <>
+                            Tem certeza que deseja marcar a devolução?<br />
+                            <strong>Jogo:</strong> {emprestimoParaDevolver.jogo}<br />
+                            <strong>Participante:</strong> {emprestimoParaDevolver.participante}<br />
+                            <strong>Horário:</strong> {emprestimoParaDevolver.horario}
+                        </>
+                    ) : 'Tem certeza que deseja marcar a devolução?'
+                }
+                confirmLabel="Devolver"
+                cancelLabel="Cancelar"
+                variant="primary"
+                onConfirm={confirmDevolver}
+                onCancel={() => { 
+                    setConfirmReturnOpen(false); 
+                    setEmprestimoParaDevolver(null); 
+                }}
+            />
+            
+            {/* Modal de confirmação de exclusão */}
+            <ConfirmModal
+                isOpen={confirmDeleteOpen}
+                title="Excluir Empréstimo"
+                message={
+                    emprestimoParaExcluir ? (
+                        <>
+                            Tem certeza que deseja excluir o empréstimo?<br />
+                            <strong>Jogo:</strong> {emprestimoParaExcluir.jogo}<br />
+                            <strong>Participante:</strong> {emprestimoParaExcluir.participante}<br />
+                            <strong>Horário:</strong> {emprestimoParaExcluir.horario}
+                        </>
+                    ) : 'Tem certeza que deseja excluir o empréstimo?'
+                }
+                confirmLabel="Excluir"
+                cancelLabel="Cancelar"
+                variant="danger"
+                onConfirm={confirmExcluir}
+                onCancel={() => { 
+                    setConfirmDeleteOpen(false); 
+                    setEmprestimoParaExcluir(null); 
+                }}
             />
         </>
     );

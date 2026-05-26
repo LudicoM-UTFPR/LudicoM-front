@@ -46,7 +46,11 @@ Thumbs.db
 *.swp
 *.swo
 *~
+.opencode/
 
 # Temporary files
 tmp/
 temp/
+
+graphify-out/
+.graphifyignore

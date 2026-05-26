@@ -1,4 +1,4 @@
-import type { Evento } from "../types";
+import type { Evento, PageResponse } from "../types";
 import { API_BASE_URL } from "../constants";
 import { validateEntityData, ENTITY_SCHEMAS, handleError } from "../utils";
 import { getAuthHeaders } from "./authService";
@@ -65,6 +65,45 @@ export async function fetchEventos(signal?: AbortSignal): Promise<Evento[]> {
     return validated;
   } catch (e) {
     handleError(e, "eventosService.fetchEventos");
+    throw e;
+  }
+}
+
+function normalizeEvento(item: any): any {
+  const out: any = { ...item };
+  if (out.uid && !out.id) out.id = String(out.uid);
+  if (out.horaInicio) out.horaInicio = String(out.horaInicio).substring(0, 5);
+  if (out.horaFim) out.horaFim = String(out.horaFim).substring(0, 5);
+  return out;
+}
+
+export async function fetchEventosPaginated(
+  page: number,
+  size: number,
+  search?: string,
+  signal?: AbortSignal
+): Promise<PageResponse<Evento>> {
+  let url = `${ENDPOINT}?paginated=true&page=${page}&size=${size}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  try {
+    const res = await fetch(url, { signal, headers: getAuthHeaders() });
+    if (!res.ok) throw await extractError(res);
+    const json = await res.json();
+    const content = Array.isArray(json.content) ? json.content : [];
+    const normalized = content.map(normalizeEvento);
+    const validated = validateEntityData<Evento>(normalized, ENTITY_SCHEMAS.evento as any);
+    return {
+      content: validated,
+      totalPages: json.totalPages ?? 0,
+      totalElements: json.totalElements ?? 0,
+      number: json.number ?? page,
+      size: json.size ?? size,
+      first: json.first ?? true,
+      last: json.last ?? true,
+      empty: json.empty ?? validated.length === 0
+    };
+  } catch (e) {
+    handleError(e, 'eventosService.fetchEventosPaginated');
     throw e;
   }
 }

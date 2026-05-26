@@ -22,6 +22,7 @@
 @import './components/toast.css';
 @import './components/autocomplete.css';
 @import './components/empty-state.css';
+@import './components/pagination.css';
 
 /* Responsive Styles */
 @import './base/responsive.css';
