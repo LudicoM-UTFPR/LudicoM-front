@@ -381,9 +381,6 @@ const QuickActions: React.FC<QuickActionsProps> = ({ onEmprestimoCreated }) => {
             <ConsultModal
                 isOpen={isJogosModalOpen}
                 onClose={closeJogosModal}
-                jogos={jogos}
-                loading={jogosLoading}
-                error={jogosError}
             />
 
             {/* Modal para registrar empréstimo */}
