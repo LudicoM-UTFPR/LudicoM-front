@@ -48,7 +48,7 @@ const App: React.FC = () => {
 
     return (
         <ToastProvider>
-            <Router>
+            <Router basename="/LudicoM-front/">
                 <div className="app">
                     <AnimatedBackground />
                     <Header />
