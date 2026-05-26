@@ -1,0 +1,10 @@
+<!doctype html><html><head><meta charset="utf-8"><title>LudicoM</title><script>(function(l) {
+        if (l.search[1] === '?') {
+          var decoded = l.search.slice(1).split('&').map(function(s) { 
+            return s.replace(/~and~/g, '&')
+          }).join('&');
+          window.history.replaceState(null, null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location))</script><script defer="defer" src="/LudicoM-front/runtime.434bebc8391a91423e08.js"></script><script defer="defer" src="/LudicoM-front/vendors.fd3d2f1d8239db7534e6.js"></script><script defer="defer" src="/LudicoM-front/main.60c7b44723c0b90357af.js"></script></head><body><div id="root"></div><script src="/LudicoM-front/main.js"></script></body></html>
