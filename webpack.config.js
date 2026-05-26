@@ -10,6 +10,7 @@ module.exports = (env, argv) => {
         entry: "./src/app/index.tsx",
         output: {
             path: path.resolve(__dirname, "dist"),
+            publicPath: "/LudicoM-front/",
             filename: isProd ? "[name].[contenthash].js" : "[name].js",
             chunkFilename: isProd ? "[name].[contenthash].js" : "[name].js",
             clean: true,
