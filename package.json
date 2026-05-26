@@ -8,8 +8,8 @@
     "scripts": {
         "start": "webpack serve --mode development",
         "build": "webpack --mode production",
-        "predeploy": "npm run build",
-        "deploy": "gh-pages -d dist",
+        "predeploy": "npm run build ",
+        "deploy": "npm run build && gh-pages -d build",
         "type-check": "tsc --noEmit",
         "type-check:watch": "tsc --noEmit --watch",
         "test": "echo \"Error: no test specified\" && exit 1"
