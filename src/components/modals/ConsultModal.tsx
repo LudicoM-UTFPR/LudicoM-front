@@ -1,132 +1,147 @@
-import React, { useState, useEffect } from 'react';
-import { GenericTable, DetailModal, EditModal } from '../';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { GenericTable, DetailModal, EditModal, Pagination } from '../';
 import { jogoDetailFields, jogoEditFields, JOGO_COLUMNS } from '../../shared/constants';
 import { useCrudOperations } from '../../shared/hooks';
+import { fetchJogosPaginated, updateJogo, deleteJogo } from '../../shared/services/jogosService';
 import type { Jogo, TableAction } from '../../shared/types';
 
 interface ConsultModalProps {
   isOpen: boolean;
   onClose: () => void;
-  jogos: Jogo[];
-  loading?: boolean;
-  error?: string | null;
   onJogoUpdated?: (jogo: Jogo) => void;
   onJogoDeleted?: (jogoId: number | string) => void;
 }
 
-export function ConsultModal({ 
-  isOpen, 
-  onClose, 
-  jogos, 
-  loading = false, 
-  error = null, 
-  onJogoUpdated, 
-  onJogoDeleted 
+export function ConsultModal({
+  isOpen,
+  onClose,
+  onJogoUpdated,
+  onJogoDeleted
 }: ConsultModalProps) {
-  const [localJogos, setLocalJogos] = useState<Jogo[]>(jogos);
+  const [jogos, setJogos] = useState<Jogo[]>([]);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { 
-    selectedItem: selectedJogo, 
-    isModalOpen: isDetailModalOpen, 
-    handleDetalhes: openDetailModal, 
+  const {
+    selectedItem: selectedJogo,
+    isModalOpen: isDetailModalOpen,
+    handleDetalhes: openDetailModal,
     closeDetailModal,
     handleEditar,
     isEditModalOpen,
-    closeEditModal,
-    createHandleExcluir,
-    createHandleSalvarEdicao
+    closeEditModal
   } = useCrudOperations<Jogo>();
 
-  // Sincronizar jogos locais com a prop
+  const fetchPage = useCallback(async (p: number, search: string, size: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetchJogosPaginated(p, size, search || undefined);
+      setJogos(result.content);
+      setTotalPages(result.totalPages);
+      setTotalElements(result.totalElements);
+      setPage(result.number);
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
+      setError('Erro ao carregar jogos.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    setLocalJogos(jogos);
-  }, [jogos]);
+    if (!isOpen) return;
+    setPage(0);
+    setSearchText('');
+    setDebouncedSearch('');
+    fetchPage(0, '', pageSize);
+  }, [isOpen]);
 
-  // Handler para exclusão
-  const handleExcluir = createHandleExcluir(
-    localJogos,
-    (updatedJogos) => {
-      setLocalJogos(updatedJogos);
-      // Se há callback para notificar o componente pai, encontra qual item foi removido
-      if (onJogoDeleted) {
-        const removedJogo = localJogos.find(jogo => !updatedJogos.find(uj => uj.id === jogo.id));
-        if (removedJogo) {
-          onJogoDeleted(removedJogo.id);
-        }
-      }
-    },
-    (jogo) => `Tem certeza que deseja excluir o jogo?\n\nNome: ${jogo.nome}\nCódigo: ${jogo.codigoDeBarras}`
-  );
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      setDebouncedSearch(searchText);
+      if (searchText !== debouncedSearch) setPage(0);
+    }, 300);
+    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
+  }, [searchText]);
 
-  // Handler para salvar edição
-  const handleSalvarEdicao = createHandleSalvarEdicao(
-    localJogos,
-    (updatedJogos) => {
-      setLocalJogos(updatedJogos);
-      // Notifica o componente pai sobre a atualização se callback fornecido
-      if (onJogoUpdated && selectedJogo) {
-        const updatedJogo = updatedJogos.find(j => j.id === selectedJogo.id);
-        if (updatedJogo) {
-          onJogoUpdated(updatedJogo);
-        }
-      }
-    },
-    (jogo) => ({ ...jogo, atualizadoQuando: new Date().toISOString() })
-  );
+  useEffect(() => {
+    if (isOpen) fetchPage(page, debouncedSearch, pageSize);
+  }, [page, debouncedSearch, pageSize, isOpen, fetchPage]);
+
+  const handleSearchChange = useCallback((value: string) => setSearchText(value), []);
+  const handlePageSizeChange = useCallback((size: number) => { setPageSize(size); setPage(0); }, []);
+
+  const handleSalvarEdicao = async (jogoAtualizado: Jogo) => {
+    try {
+      const saved = await updateJogo(String(jogoAtualizado.id), jogoAtualizado);
+      setJogos(prev => prev.map(j => String(j.id) === String(saved.id) ? { ...j, ...saved } : j));
+      if (onJogoUpdated) onJogoUpdated(saved);
+      closeEditModal();
+    } catch {
+      // errors handled by GenericTable
+    }
+  };
 
   if (!isOpen) return null;
 
   const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+    if (e.target === e.currentTarget) onClose();
   };
 
   const actions: TableAction<Jogo>[] = [
     { label: 'Detalhes', onClick: openDetailModal, variant: 'primary' },
     { label: 'Editar', onClick: handleEditar, variant: 'secondary' },
-    { label: 'Excluir', onClick: handleExcluir, variant: 'danger' }
   ];
 
   return (
     <>
       <div className="modal-backdrop" onClick={handleBackdropClick}>
-        <div className="modal modal--edit" 
-            style={{
-                maxWidth: '90vw', 
-                maxHeight: '90vh'
-            }}
+        <div className="modal modal--edit"
+          style={{ maxWidth: '90vw', maxHeight: '90vh' }}
         >
           <div className="modal-header">
             <h2>Consultar Jogos</h2>
-            <button 
-              className="close-button" 
-              onClick={onClose}
-              type="button"
-              aria-label="Fechar modal"
-            >
-              ✕
-            </button>
+            <button className="close-button" onClick={onClose} type="button" aria-label="Fechar modal">✕</button>
           </div>
-          
-          <div className="modal-content" style={{ padding: '12px' }}>
-            {loading && <p>Carregando jogos...</p>}
-            {error && <p>Erro: {error}</p>}
-            {!loading && !error && (
-              <GenericTable<Jogo>
-                data={localJogos}
-                columns={JOGO_COLUMNS}
-                actions={actions}
-                searchPlaceholder="Buscar por jogo..."
-                searchFields={['nome', 'nomeAlternativo', 'codigoDeBarras']}
-                tableTitle="Jogos Disponíveis"
-              />
+
+          <div className="modal-content" style={{ padding: '12px', overflow: 'visible' }}>
+            {loading && jogos.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>Carregando...</p>}
+            {error && jogos.length === 0 && <p style={{ textAlign: 'center', color: 'var(--btn-danger)' }}>{error}</p>}
+            {(jogos.length > 0 || !loading) && (
+              <div style={{ opacity: loading && jogos.length > 0 ? 0.5 : 1, transition: 'opacity 0.15s ease' }}>
+                <GenericTable<Jogo>
+                  data={jogos}
+                  columns={JOGO_COLUMNS}
+                  actions={actions}
+                  searchPlaceholder="Buscar por jogo..."
+                  searchFields={['nome', 'nomeAlternativo', 'codigoDeBarras']}
+                  tableTitle="Jogos Disponíveis"
+                  controlledSearchValue={searchText}
+                  onControlledSearchChange={handleSearchChange}
+                />
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  totalElements={totalElements}
+                  pageSize={pageSize}
+                  onPageChange={setPage}
+                  onPageSizeChange={handlePageSizeChange}
+                />
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Modal de detalhes do jogo selecionado */}
       <DetailModal<Jogo>
         isOpen={isDetailModalOpen}
         onClose={closeDetailModal}
@@ -135,7 +150,6 @@ export function ConsultModal({
         title="Detalhes do Jogo"
       />
 
-      {/* Modal de edição do jogo selecionado */}
       <EditModal<Jogo>
         isOpen={isEditModalOpen}
         onClose={closeEditModal}

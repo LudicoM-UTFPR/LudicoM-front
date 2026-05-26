@@ -1,4 +1,4 @@
-import type { Jogo } from '../types';
+import type { Jogo, PageResponse } from '../types';
 import { API_BASE_URL } from '../constants';
 import { validateEntityData, ENTITY_SCHEMAS } from '../utils';
 import { handleError } from '../utils';
@@ -112,6 +112,64 @@ export async function fetchJogos(signal?: AbortSignal): Promise<Jogo[]> {
         handleError(error, 'jogosService.fetchJogos');
         throw error;
     }
+}
+
+export async function fetchJogosPaginated(
+  page: number,
+  size: number,
+  search?: string,
+  signal?: AbortSignal
+): Promise<PageResponse<Jogo>> {
+  let url = `${API_BASE_URL.replace(/\/+$/, '')}/jogo?paginated=true&page=${page}&size=${size}`;
+  if (search) {
+    url += `&search=${encodeURIComponent(search)}`;
+  }
+
+  try {
+    const res = await fetch(url, {
+      signal,
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+      if (res.status === 401) {
+        const err = await extractError(res);
+        err.message = err.message + ' - Verifique as credenciais de autenticação';
+        throw err;
+      }
+      throw await extractError(res);
+    }
+
+    const json = await res.json();
+
+    const content = Array.isArray(json.content) ? json.content : [];
+    let normalized = content;
+    if (
+      content.length > 0 &&
+      content[0] &&
+      Object.prototype.hasOwnProperty.call(content[0], 'uid') &&
+      !Object.prototype.hasOwnProperty.call(content[0], 'id')
+    ) {
+      normalized = content.map((item: any) => normalizeJogoRecord({ ...item, id: String(item.uid), uid: item.uid }));
+    } else {
+      normalized = content.map((item: any) => normalizeJogoRecord(item));
+    }
+
+    const validated = validateEntityData<Jogo>(normalized, ENTITY_SCHEMAS.jogo as any);
+
+    return {
+      content: validated,
+      totalPages: json.totalPages ?? 0,
+      totalElements: json.totalElements ?? 0,
+      number: json.number ?? page,
+      size: json.size ?? size,
+      first: json.first ?? true,
+      last: json.last ?? true,
+      empty: json.empty ?? validated.length === 0
+    };
+  } catch (error) {
+    handleError(error, 'jogosService.fetchJogosPaginated');
+    throw error;
+  }
 }
 
 export async function createJogo(payload: Partial<Jogo>): Promise<Jogo> {

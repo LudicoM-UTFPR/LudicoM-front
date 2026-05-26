@@ -1,4 +1,4 @@
-import type { Instituicao } from '../types';
+import type { Instituicao, PageResponse } from '../types';
 import { API_BASE_URL } from '../constants';
 import { validateEntityData, ENTITY_SCHEMAS, handleError } from '../utils';
 import { getAuthHeaders } from './authService';
@@ -44,6 +44,36 @@ export async function fetchInstituicoes(signal?: AbortSignal): Promise<Instituic
     return validated;
   } catch (e) {
     handleError(e, 'instituicaoService.fetchInstituicoes');
+    throw e;
+  }
+}
+
+export async function fetchInstituicoesPaginated(
+  page: number,
+  size: number,
+  search?: string,
+  signal?: AbortSignal
+): Promise<PageResponse<Instituicao>> {
+  let url = `${ENDPOINT}?paginated=true&page=${page}&size=${size}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  try {
+    const res = await fetch(url, { signal, headers: getAuthHeaders() });
+    if (!res.ok) throw await extractError(res);
+    const json = await res.json();
+    const content = Array.isArray(json.content) ? json.content : [];
+    const validated = validateEntityData<Instituicao>(content, ENTITY_SCHEMAS.instituicao as any);
+    return {
+      content: validated,
+      totalPages: json.totalPages ?? 0,
+      totalElements: json.totalElements ?? 0,
+      number: json.number ?? page,
+      size: json.size ?? size,
+      first: json.first ?? true,
+      last: json.last ?? true,
+      empty: json.empty ?? validated.length === 0
+    };
+  } catch (e) {
+    handleError(e, 'instituicaoService.fetchInstituicoesPaginated');
     throw e;
   }
 }
