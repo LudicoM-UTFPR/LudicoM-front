@@ -1,4 +1,4 @@
-name: Deploy to Organization GitHub Pages
+name: Deploy to Personal GitHub Pages
 
 on:
   push:
@@ -21,4 +21,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-          repository_name: ludicom-utfpr/LudicoM-front
+          repository_name: PuraFome/LudicoM-front

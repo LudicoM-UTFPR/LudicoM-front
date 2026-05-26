@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "Front end, to Ludicom system",
     "main": "index.js",
-    "homepage": "https://purafome.github.io/seu-repositorio",
+    "homepage": "https://purafome.github.io/LudicoM-front",
     
     "scripts": {
         "start": "webpack serve --mode development",
