@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkludicom_front=self.webpackChunkludicom_front||[]).push([[71],{7071:(e,n,t)=>{t.r(n),t.d(n,{default:()=>r});var u=t(6540),c=t(2673);const r=function(){return u.createElement(c.LR,{pageName:"Login"})}}}]);
